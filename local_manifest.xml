@@ -6,6 +6,10 @@
    <!-- Remove existing repositories -->
    <remove-project name="platform/external/zlib" />
    <remove-project name="platform/system/memory/lmkd" />
+   <remove-project name="CalyxOS/platform_prebuilts_calyx_chromium_arm64" />
+   <remove-project name="CalyxOS/chromium-patches" />
+   <remove-project name="external/chromium-trace" />
+   <remove-project name="external/chromium-webview" />
 
    <!-- Add new repositories -->
    <project path="device/xiaomi/davinci" name="CalyxDavinci/device_xiaomi_davinci" remote="calyxd-github" revision="12" />
@@ -16,4 +20,6 @@
 
    <project path="external/zlib-ng" name="CalyxDavinci/android_external_zlib-ng" remote="calyxd-github" revision="sc-v2" />
    <project path="system/memory/lmkd" name="YAAP/system_memory_lmkd" remote="calyxd-github" revision="twelve" />
+
+   <project path="external/bromite-webview" name="CalyxDavinci/platform_external_bromite-webview" remote="calyxd-github" revision="12.1" />
 </manifest>
