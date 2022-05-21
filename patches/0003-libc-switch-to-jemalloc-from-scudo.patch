@@ -1,0 +1,49 @@
+From 51252a24ad1fc2a40e1ed13233880612e628628e Mon Sep 17 00:00:00 2001
+From: Diniboy1123 <Diniboy1123@users.noreply.github.com>
+Date: Mon, 2 May 2022 11:41:30 +0300
+Subject: [PATCH 1/1] libc: switch to jemalloc from scudo
+
+Change-Id: Ib2a9a295faff10a5848b7019acebcfe54fa92f66
+---
+ libc/Android.bp | 14 +-------------
+ 1 file changed, 1 insertion(+), 13 deletions(-)
+
+diff --git a/libc/Android.bp b/libc/Android.bp
+index 2c0656f72..756d2b1f0 100644
+--- a/libc/Android.bp
++++ b/libc/Android.bp
+@@ -112,22 +112,11 @@ cc_defaults {
+     // warning since this is intended right now.
+     ldflags: ["-Wl,-z,muldefs"],
+ 
+-    product_variables: {
+-        malloc_zero_contents: {
+-            cflags: ["-DSCUDO_ZERO_CONTENTS"],
+-        },
+-        malloc_pattern_fill_contents: {
+-            cflags: ["-DSCUDO_PATTERN_FILL_CONTENTS"],
+-        },
+-        malloc_not_svelte: {
+-            cflags: ["-DUSE_SCUDO"],
+-        },
+-    },
++    product_variables: {},
+ }
+ 
+ libc_scudo_product_variables = {
+     malloc_not_svelte: {
+-        cflags: ["-DUSE_SCUDO"],
+         whole_static_libs: ["libscudo"],
+         exclude_static_libs: [
+             "libjemalloc5",
+@@ -150,7 +139,6 @@ cc_defaults {
+         "libc_jemalloc_wrapper",
+     ],
+     header_libs: ["gwp_asan_headers"],
+-    product_variables: libc_scudo_product_variables,
+ }
+ 
+ // Functions not implemented by jemalloc directly, or that need to
+-- 
+2.35.3
+
