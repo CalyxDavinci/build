@@ -1,0 +1,80 @@
+From 187f5efd659dff889f3a5abfb4f1fec23fd1d9f6 Mon Sep 17 00:00:00 2001
+From: Diniboy1123 <Diniboy1123@users.noreply.github.com>
+Date: Sat, 21 May 2022 17:35:56 +0300
+Subject: [PATCH 1/1] Use bromite instead of chromium webview
+
+Change-Id: Ie59e29bde9d694bd031413a0bbf92ebaec88d5dc
+---
+ config/common.mk                                  |  5 ++---
+ .../core/res/res/xml/config_webview_packages.xml  |  1 +
+ scripts/sign-trichrome.sh                         | 15 +++++++--------
+ 3 files changed, 10 insertions(+), 11 deletions(-)
+
+diff --git a/config/common.mk b/config/common.mk
+index 0791f56..c8e68ec 100644
+--- a/config/common.mk
++++ b/config/common.mk
+@@ -81,13 +81,12 @@ PRODUCT_PACKAGES += \
+     ExactCalculator \
+     F-Droid \
+     F-DroidPrivilegedExtension \
+-    TrichromeChrome \
+-    TrichromeWebView \
+     Eleven \
+     Firewall \
+     Recorder \
+     Seedvault \
+-    Ripple
++    Ripple \
++    webview
+ 
+ # Config
+ PRODUCT_PACKAGES += \
+diff --git a/overlay/common/frameworks/base/core/res/res/xml/config_webview_packages.xml b/overlay/common/frameworks/base/core/res/res/xml/config_webview_packages.xml
+index 03a7f75..7bb8c4c 100644
+--- a/overlay/common/frameworks/base/core/res/res/xml/config_webview_packages.xml
++++ b/overlay/common/frameworks/base/core/res/res/xml/config_webview_packages.xml
+@@ -26,4 +26,5 @@
+         <signature>MIIDuzCCAqOgAwIBAgIJANi6DgBQG4ZTMA0GCSqGSIb3DQEBBQUAMHQxCzAJBgNVBAYTAlVTMRMwEQYDVQQIDApDYWxpZm9ybmlhMRYwFAYDVQQHDA1Nb3VudGFpbiBWaWV3MRQwEgYDVQQKDAtHb29nbGUgSW5jLjEQMA4GA1UECwwHQW5kcm9pZDEQMA4GA1UEAwwHd2VidmlldzAeFw0xNDA4MDgyMzIwMjBaFw00MTEyMjQyMzIwMjBaMHQxCzAJBgNVBAYTAlVTMRMwEQYDVQQIDApDYWxpZm9ybmlhMRYwFAYDVQQHDA1Nb3VudGFpbiBWaWV3MRQwEgYDVQQKDAtHb29nbGUgSW5jLjEQMA4GA1UECwwHQW5kcm9pZDEQMA4GA1UEAwwHd2VidmlldzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMbtaFX0r5aZJMAbPVMAgK1ZZ29dTn91VsGxXv2hqrQo7IpqEy2JmPvPnoMsSiuTAe+UcQy8oKDQ2aYVSAd1DGIy+nSRyFTt3LSIAdwSBkB1qT4a+OqkpsR6bSNXQXQ18lCQu9gREY3h3QlYBQAyzRxw4hRGlrXAzuSz1Ec4W+6x4nLG5DG61MAMR8ClF9XSqbmGB3kyZ70A0X9OPYYxiMWP1ExaYvpaVqjyZZcrPwr+vtW8oCuGBUtHpBUH3OoG+9s2YMcgLG7vCK9awKDqlPcJSpIAAj6uGs4gORmkqxZRMskLSTWbhP4p+3Ap8jYzTVB6Y1/DMVmYTWRMcPW0macCAwEAAaNQME4wHQYDVR0OBBYEFJ6bAR6/QVm4w9LRSGQiaR5Rhp3TMB8GA1UdIwQYMBaAFJ6bAR6/QVm4w9LRSGQiaR5Rhp3TMAwGA1UdEwQFMAMBAf8wDQYJKoZIhvcNAQEFBQADggEBAEQu8QiVxax7/diEiJrgKE1LwdXsIygJK/KnaKdnYEkAQpeu/QmrLiycm+OFbL1qHJIB7OuI/PQBUtcaNSiJSCVgtwtEbZWWIdsynqG/Nf4aGOndXegSQNRH54M05sRHLoeRycPrY7xQlEwGikNFR76+5UdwFBQI3Gn22g6puJnVukQm/wXQ+ajoiS4QclrNlixoDQsZ4STLH4+Wju2wIWKFFArIhVEIlbamq+p6BghuzH3aIz/Fy0YTQKi7SA+0fuNeCaqlSm5pYSt6p5CH89y1Fr+wFc5r3iLRnUwRcy08ESC7bZJnxV3d/YQ5valTxBbzku/dQbXVj/xg69H8l8M</signature>
+     </webviewprovider>
+ 
++    <webviewprovider description="Bromite" packageName="org.bromite.webview" availableByDefault="true" />
+ </webviewproviders>
+diff --git a/scripts/sign-trichrome.sh b/scripts/sign-trichrome.sh
+index 808bf8b..2b784ec 100755
+--- a/scripts/sign-trichrome.sh
++++ b/scripts/sign-trichrome.sh
+@@ -1,5 +1,5 @@
+ #!/bin/bash
+-# Signs the Trichrome apks
++# Signs the webview apks
+ 
+ SCRIPTPATH="$(cd "$(dirname "$0")";pwd -P)"
+ TOP=$SCRIPTPATH/../../../
+@@ -13,17 +13,16 @@ KEY=${KEY_DIR}/calyxos.keystore
+ error() {
+   echo error: $1, please try again >&2
+   echo "Usage: $0"
+-  echo "Supported files: TrichromeChrome.apk TrichromeLibrary.apk TrichromeWebView.apk"
++  echo "Supported files: webview.apk"
+   exit 1
+ }
+ 
+ [[ $# -eq 0 ]] || error "incorrect number of arguments"
+ 
+ [[ ! -e ${KEY} ]] && error "$KEY not found"
+-[[ ! -e TrichromeChrome.apk ]] && error "TrichromeChrome.aab not found"
+-[[ ! -e TrichromeLibrary.apk ]] && error "TrichromeLibrary.apk not found"
+-[[ ! -e TrichromeWebView.apk ]] && error "TrichromeWebView.apk not found"
++[[ ! -e webview.apk ]] && error "webview.apk not found"
+ 
+-for APP in TrichromeChrome TrichromeLibrary TrichromeWebView; do
+-	$APKSIGNER sign --ks ${KEY} --ks-key-alias calyxos --in ${APP}.apk --out ${APP}-signed.apk
+-done
++mv webview.apk webview-signed.apk
++#for APP in webview; do
++#	$APKSIGNER sign --ks ${KEY} --ks-key-alias calyxos --in ${APP}.apk --out ${APP}-signed.apk
++#done
+-- 
+2.35.3
+
