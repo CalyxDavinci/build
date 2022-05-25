@@ -8,8 +8,8 @@
    <remove-project name="platform/system/memory/lmkd" />
    <remove-project name="CalyxOS/platform_prebuilts_calyx_chromium_arm64" />
    <remove-project name="CalyxOS/chromium-patches" />
-   <remove-project name="external/chromium-trace" />
-   <remove-project name="external/chromium-webview" />
+   <remove-project name="platform/external/chromium-trace" />
+   <remove-project name="platform/external/chromium-webview" />
 
    <!-- Add new repositories -->
    <project path="device/xiaomi/davinci" name="CalyxDavinci/device_xiaomi_davinci" remote="calyxd-github" revision="12" />
