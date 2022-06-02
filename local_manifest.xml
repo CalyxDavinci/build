@@ -2,6 +2,7 @@
 <manifest>
    <!-- Remotes -->
    <remote name="calyxd-github" fetch="https://github.com/" />
+   <remote name="calyxd-gitlab" fetch="https://gitlab.com/" />
 
    <!-- Remove existing repositories -->
    <remove-project name="platform/external/zlib" />
@@ -21,5 +22,5 @@
    <project path="external/zlib-ng" name="CalyxDavinci/android_external_zlib-ng" remote="calyxd-github" revision="sc-v2" />
    <project path="system/memory/lmkd" name="YAAP/system_memory_lmkd" remote="calyxd-github" revision="twelve" />
 
-   <project path="external/bromite-webview" name="CalyxDavinci/platform_external_bromite-webview" remote="calyxd-github" revision="12.1" />
+   <project path="external/bromite-webview" name="CalyxDavinci/platform_external_bromite-webview" remote="calyxd-gitlab" revision="12.1" />
 </manifest>
