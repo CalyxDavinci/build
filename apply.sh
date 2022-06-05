@@ -30,6 +30,11 @@ echo "[i] Applying 0002-soong-clang-builds-with-O3.patch"
 git am -3 $CATHEDRA_PATH/patches/0002-soong-clang-builds-with-O3.patch
 cd $BASE_BUILD_DIR
 
+cd build/tools
+echo "[i] Applying 0005-build-add-erofs-support.patch"
+git am -3 $CATHEDRA_PATH/patches/0005-build-add-erofs-support.patch
+cd $BASE_BUILD_DIR
+
 cd bionic
 echo "[i] Applying 0003-libc-switch-to-jemalloc-from-scudo.patch"
 git am -3 $CATHEDRA_PATH/patches/0003-libc-switch-to-jemalloc-from-scudo.patch
