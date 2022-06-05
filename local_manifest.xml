@@ -14,6 +14,7 @@
    <remove-project name="CalyxOS/chromium-patches" />
    <remove-project name="platform/external/chromium-trace" />
    <remove-project name="platform/external/chromium-webview" />
+   <remove-project name="platform/external/erofs-utils" />
 
    <!-- Rust is outdated, add much more recent one -->
    <remove-project name="platform/prebuilts/rust" />
@@ -25,6 +26,7 @@
    <project path="vendor/xiaomi" name="CalyxDavinci/android_vendor_xiaomi" remote="calyxd-github" revision="12" />
    <project path="hardware/xiaomi" name="CalyxDavinci/android_hardware_xiaomi" remote="calyxd-github" revision="lineage-19.1" />
 
+   <project path="external/erofs-utils" name="platform/external/erofs-utils" remote="aosp" revision="master" />
    <project path="external/zlib-ng" name="CalyxDavinci/android_external_zlib-ng" remote="calyxd-github" revision="sc-v2" />
    <project path="system/memory/lmkd" name="YAAP/system_memory_lmkd" remote="calyxd-github" revision="twelve" />
 
