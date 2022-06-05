@@ -40,6 +40,11 @@ echo "[i] Applying 0003-libc-switch-to-jemalloc-from-scudo.patch"
 git am -3 $CATHEDRA_PATH/patches/0003-libc-switch-to-jemalloc-from-scudo.patch
 cd $BASE_BUILD_DIR
 
+cd system/extras
+echo "[i] Applying 0006-add-fstab-entry-for-erofs-postinstall.patch"
+git am -3 $CATHEDRA_PATH/patches/0006-add-fstab-entry-for-erofs-postinstall.patch
+cd $BASE_BUILD_DIR
+
 cd vendor/calyx
 echo "[i] Applying 0004-Use-bromite-instead-of-chromium-webview.patch"
 git am -3 $CATHEDRA_PATH/patches/0004-Use-bromite-instead-of-chromium-webview.patch
