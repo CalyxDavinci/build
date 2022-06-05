@@ -11,6 +11,10 @@ mkdir -p prebuilts/clang/host/linux-x86/adrian-clang
 cd prebuilts/clang/host/linux-x86/adrian-clang
 # in case of automated builds, please host a mirror
 curl https://ftp.travitia.xyz/clang/clang-latest.tar.xz | tar -xJ
+rm -rf prebuilts/clang/host/linux-x86/adrian-clang-2
+mkdir -p prebuilts/clang/host/linux-x86/adrian-clang-2
+cd prebuilts/clang/host/linux-x86/adrian-clang-2
+curl https://ftp.travitia.xyz/clang/clang-r459371.tar.xz | tar -xJ
 cd $BASE_BUILD_DIR
 
 echo "[i] Fetching is done. Patching sources..."

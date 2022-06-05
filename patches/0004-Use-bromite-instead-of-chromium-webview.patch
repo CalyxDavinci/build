@@ -1,14 +1,14 @@
-From 187f5efd659dff889f3a5abfb4f1fec23fd1d9f6 Mon Sep 17 00:00:00 2001
-From: Diniboy1123 <Diniboy1123@users.noreply.github.com>
+From e081c4e322239db7f85e0fb54b01fb38e8620df1 Mon Sep 17 00:00:00 2001
+From: Jens Reidel <adrian@travitia.xyz>
 Date: Sat, 21 May 2022 17:35:56 +0300
 Subject: [PATCH 1/1] Use bromite instead of chromium webview
 
 Change-Id: Ie59e29bde9d694bd031413a0bbf92ebaec88d5dc
 ---
- config/common.mk                                  |  5 ++---
- .../core/res/res/xml/config_webview_packages.xml  |  1 +
- scripts/sign-trichrome.sh                         | 15 +++++++--------
- 3 files changed, 10 insertions(+), 11 deletions(-)
+ config/common.mk                                     |  5 ++---
+ .../core/res/res/xml/config_webview_packages.xml     |  1 +
+ scripts/sign-trichrome.sh                            | 12 ++++--------
+ 3 files changed, 7 insertions(+), 11 deletions(-)
 
 diff --git a/config/common.mk b/config/common.mk
 index 0791f56..c8e68ec 100644
@@ -41,7 +41,7 @@ index 03a7f75..7bb8c4c 100644
 +    <webviewprovider description="Bromite" packageName="org.bromite.webview" availableByDefault="true" />
  </webviewproviders>
 diff --git a/scripts/sign-trichrome.sh b/scripts/sign-trichrome.sh
-index 808bf8b..2b784ec 100755
+index 218e030..dc41258 100755
 --- a/scripts/sign-trichrome.sh
 +++ b/scripts/sign-trichrome.sh
 @@ -1,5 +1,5 @@
@@ -51,11 +51,11 @@ index 808bf8b..2b784ec 100755
  
  SCRIPTPATH="$(cd "$(dirname "$0")";pwd -P)"
  TOP=$SCRIPTPATH/../../../
-@@ -13,17 +13,16 @@ KEY=${KEY_DIR}/calyxos.keystore
+@@ -13,17 +13,13 @@ KEY=${KEY_DIR}/calyxos.keystore
  error() {
    echo error: $1, please try again >&2
    echo "Usage: $0"
--  echo "Supported files: TrichromeChrome.apk TrichromeLibrary.apk TrichromeWebView.apk"
+-  echo "Supported files: (TrichromeChrome6432) universal.apk TrichromeLibrary6432.apk TrichromeWebView6432.apk"
 +  echo "Supported files: webview.apk"
    exit 1
  }
@@ -63,18 +63,15 @@ index 808bf8b..2b784ec 100755
  [[ $# -eq 0 ]] || error "incorrect number of arguments"
  
  [[ ! -e ${KEY} ]] && error "$KEY not found"
--[[ ! -e TrichromeChrome.apk ]] && error "TrichromeChrome.aab not found"
--[[ ! -e TrichromeLibrary.apk ]] && error "TrichromeLibrary.apk not found"
--[[ ! -e TrichromeWebView.apk ]] && error "TrichromeWebView.apk not found"
+-[[ ! -e universal.apk ]] && error "(TrichromeChrome6432) universal.apk not found"
+-[[ ! -e TrichromeLibrary6432.apk ]] && error "TrichromeLibrary6432.apk not found"
+-[[ ! -e TrichromeWebView6432.apk ]] && error "TrichromeWebView6432.apk not found"
 +[[ ! -e webview.apk ]] && error "webview.apk not found"
  
--for APP in TrichromeChrome TrichromeLibrary TrichromeWebView; do
+-for APP in universal TrichromeLibrary6432 TrichromeWebView6432; do
 -	$APKSIGNER sign --ks ${KEY} --ks-key-alias calyxos --in ${APP}.apk --out ${APP}-signed.apk
 -done
 +mv webview.apk webview-signed.apk
-+#for APP in webview; do
-+#	$APKSIGNER sign --ks ${KEY} --ks-key-alias calyxos --in ${APP}.apk --out ${APP}-signed.apk
-+#done
 -- 
-2.35.3
+2.36.1
 
