@@ -11,7 +11,7 @@
    <remove-project name="platform/external/zlib" />
    <remove-project name="platform/system/memory/lmkd" />
    <remove-project name="CalyxOS/platform_prebuilts_calyx_chromium_arm64" />
-   <remove-project name="CalyxOS/chromium-patches" />
+   <remove-project name="CalyxOS/platform_external_calyx_chromium" />
    <remove-project name="platform/external/chromium-trace" />
    <remove-project name="platform/external/chromium-webview" />
    <remove-project name="platform/external/erofs-utils" />
