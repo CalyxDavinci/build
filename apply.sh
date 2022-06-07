@@ -33,6 +33,8 @@ cd $BASE_BUILD_DIR
 cd build/tools
 echo "[i] Applying 0005-build-add-erofs-support.patch"
 git am -3 $CATHEDRA_PATH/patches/0005-build-add-erofs-support.patch
+echo "[i] Applying 0007-releasetools-use-first-entry-of-mountpoint.patch"
+git am -3 $CATHEDRA_PATH/patches/0007-releasetools-use-first-entry-of-mountpoint.patch
 cd $BASE_BUILD_DIR
 
 cd bionic
