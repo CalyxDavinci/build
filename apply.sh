@@ -48,6 +48,10 @@ cd $BASE_BUILD_DIR
 cd vendor/calyx
 echo "[i] Applying 0004-Use-bromite-instead-of-chromium-webview.patch"
 git am -3 $CATHEDRA_PATH/patches/0004-Use-bromite-instead-of-chromium-webview.patch
+echo "[i] Applying 0007-build-Flatten-APEXs-for-performance.patch"
+git am -3 $CATHEDRA_PATH/patches/0007-build-Flatten-APEXs-for-performance.patch
+echo "[i] Applying 0008-build-Set-ro.apex.updatable-false-in-product-propert.patch"
+git am -3 $CATHEDRA_PATH/patches/0008-build-Set-ro.apex.updatable-false-in-product-propert.patch
 cd $BASE_BUILD_DIR
 
 cd prebuilts/clang/host/linux-x86
