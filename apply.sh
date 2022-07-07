@@ -25,9 +25,21 @@ echo "[i] Applying 0001-core-jni-Switch-to-O3.patch"
 git am -3 $CATHEDRA_PATH/patches/0001-core-jni-Switch-to-O3.patch
 cd $BASE_BUILD_DIR
 
+cd system/core
+echo "[i] Reverting vbmeta changes"
+git revert ec10d3cf6e328da90dd4a388761d2d26543fce8f --no-edit
+cd $BASE_BUILD_DIR
+
+cd build/make
+echo "[i] Reverting key copying setup"
+git revert 725ff3afb0bead002c55262061a015fb7b8ab744 --no-edit
+cd $BASE_BUILD_DIR
+
 cd build/soong
 echo "[i] Applying 0002-soong-clang-builds-with-O3.patch"
 git am -3 $CATHEDRA_PATH/patches/0002-soong-clang-builds-with-O3.patch
+echo "[i] Applying 0009-soong-Disable-clang-tidy.patch"
+git am -3 $CATHEDRA_PATH/patches/0009-soong-Disable-clang-tidy.patch
 cd $BASE_BUILD_DIR
 
 cd build/tools
@@ -37,17 +49,14 @@ echo "[i] Applying 0007-releasetools-use-first-entry-of-mountpoint.patch"
 git am -3 $CATHEDRA_PATH/patches/0007-releasetools-use-first-entry-of-mountpoint.patch
 cd $BASE_BUILD_DIR
 
-cd bionic
-echo "[i] Applying 0003-libc-switch-to-jemalloc-from-scudo.patch"
-git am -3 $CATHEDRA_PATH/patches/0003-libc-switch-to-jemalloc-from-scudo.patch
-cd $BASE_BUILD_DIR
-
 cd system/extras
 echo "[i] Applying 0006-add-fstab-entry-for-erofs-postinstall.patch"
 git am -3 $CATHEDRA_PATH/patches/0006-add-fstab-entry-for-erofs-postinstall.patch
 cd $BASE_BUILD_DIR
 
 cd vendor/calyx
+echo "[i] Reverting chromium signing changes"
+git revert 33d266a58772cd1daf664744ad0986d948f00188 --no-edit
 echo "[i] Applying 0004-Use-bromite-instead-of-chromium-webview.patch"
 git am -3 $CATHEDRA_PATH/patches/0004-Use-bromite-instead-of-chromium-webview.patch
 echo "[i] Applying 0007-build-Flatten-APEXs-for-performance.patch"

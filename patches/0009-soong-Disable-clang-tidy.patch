@@ -1,0 +1,26 @@
+From 321321e7e80a2234fc501decde11d78a76612a38 Mon Sep 17 00:00:00 2001
+From: Jens Reidel <adrian@travitia.xyz>
+Date: Thu, 7 Jul 2022 00:11:31 +0300
+Subject: [PATCH] soong: Disable clang-tidy
+
+Change-Id: Ia405f4d941f902883741c9c9cfce1d4fb885d209
+---
+ cc/tidy.go | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/cc/tidy.go b/cc/tidy.go
+index 0db260508..349a6a1e7 100644
+--- a/cc/tidy.go
++++ b/cc/tidy.go
+@@ -82,7 +82,7 @@ func (tidy *tidyFeature) flags(ctx ModuleContext, flags Flags) Flags {
+ 		return flags
+ 	}
+ 
+-	flags.Tidy = true
++	flags.Tidy = false
+ 
+ 	// Add global WITH_TIDY_FLAGS and local tidy_flags.
+ 	withTidyFlags := ctx.Config().Getenv("WITH_TIDY_FLAGS")
+-- 
+2.36.1
+

@@ -20,10 +20,10 @@
    <remove-project name="platform/prebuilts/rust" />
 
    <!-- Add new repositories -->
-   <project path="device/xiaomi/davinci" name="CalyxDavinci/device_xiaomi_davinci" remote="calyxd-github" revision="12" />
+   <project path="device/xiaomi/davinci" name="CalyxDavinci/device_xiaomi_davinci" remote="calyxd-github" revision="12-new" />
    <project path="kernel/xiaomi/sm6150" name="CalyxDavinci/kernel_xiaomi_sm6150" remote="calyxd-github" revision="12.1" />
-   <project path="device/xiaomi/sm6150-common" name="CalyxDavinci/android_device_xiaomi_sm6150-common" remote="calyxd-github" revision="12" />
-   <project path="vendor/xiaomi" name="CalyxDavinci/android_vendor_xiaomi" remote="calyxd-github" revision="12" />
+   <project path="device/xiaomi/sm6150-common" name="CalyxDavinci/android_device_xiaomi_sm6150-common" remote="calyxd-github" revision="12-new" />
+   <project path="vendor/xiaomi" name="CalyxDavinci/android_vendor_xiaomi" remote="calyxd-github" revision="12-new" />
    <project path="hardware/xiaomi" name="CalyxDavinci/android_hardware_xiaomi" remote="calyxd-github" revision="lineage-19.1" />
 
    <project path="external/erofs-utils" name="platform/external/erofs-utils" remote="aosp" revision="master" />
@@ -33,5 +33,5 @@
    <project path="external/bromite-webview" name="CalyxDavinci/platform_external_bromite-webview" remote="calyxd-gitlab" revision="12.1" />
 
    <!-- More recent Rust -->
-   <project path="prebuilts/rust" name="platform/prebuilts/rust" remote="aosp" clone-depth="1" revision="refs/tags/rustc-1.61.0" />
+   <project path="prebuilts/rust" name="platform/prebuilts/rust" remote="aosp" clone-depth="1" revision="refs/tags/rustc-1.61.0.p2" />
 </manifest>
