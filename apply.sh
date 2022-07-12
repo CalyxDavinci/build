@@ -71,8 +71,8 @@ git am -3 $CATHEDRA_PATH/patches/clang-15/0001-No-scudo-prebuilts-since-clang-r4
 cd $BASE_BUILD_DIR
 
 cd build/soong
-echo "[i] Applying 0001-soong-Clang-14-15-Rust-1.61-backports.patch"
-git am -3 $CATHEDRA_PATH/patches/clang-15/0001-soong-Clang-14-15-Rust-1.61-backports.patch
+echo "[i] Applying 0001-soong-Clang-14-15-Rust-1.62-backports.patch"
+git am -3 $CATHEDRA_PATH/patches/clang-15/0001-soong-Clang-14-15-Rust-1.62-backports.patch
 cd $BASE_BUILD_DIR
 
 cd build/make
@@ -156,6 +156,6 @@ git am -3 $CATHEDRA_PATH/patches/clang-15/0001-bt-Ignore-unused-value-warnings.p
 cd $BASE_BUILD_DIR
 
 cd system/security
-echo "[i] Applying 0001-Fix-warnings-in-preparation-for-Rust-1.54.0.patch"
-git am -3 $CATHEDRA_PATH/patches/clang-15/0001-Fix-warnings-in-preparation-for-Rust-1.54.0.patch
+echo "[i] Applying 0001-Fix-warnings-in-preparation-for-Rust-1.62.0.patch"
+git am -3 $CATHEDRA_PATH/patches/clang-15/0001-Fix-warnings-in-preparation-for-Rust-1.62.0.patch
 cd $BASE_BUILD_DIR
