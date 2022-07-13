@@ -33,5 +33,5 @@
    <project path="external/bromite-webview" name="CalyxDavinci/platform_external_bromite-webview" remote="calyxd-gitlab" revision="12.1" />
 
    <!-- More recent Rust -->
-   <project path="prebuilts/rust" name="platform/prebuilts/rust" remote="aosp" clone-depth="1" revision="refs/tags/rustc-1.61.0.p2" />
+   <project path="prebuilts/rust" name="platform/prebuilts/rust" remote="aosp" clone-depth="1" revision="master" />
 </manifest>
