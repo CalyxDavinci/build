@@ -23,6 +23,22 @@ echo "[i] Fetching is done. Patching sources..."
 cd frameworks/base
 echo "[i] Applying 0001-core-jni-Switch-to-O3.patch"
 git am -3 $CATHEDRA_PATH/patches/0001-core-jni-Switch-to-O3.patch
+echo "[i] Applying 0014-LayoutInflater-Opportunistically-create-views-direct.patch"
+git am -3 $CATHEDRA_PATH/patches/0014-LayoutInflater-Opportunistically-create-views-direct.patch
+echo "[i] Applying 0015-SystemServiceRegistry-Replace-ArrayMap-with-HashMap-.patch"
+git am -3 $CATHEDRA_PATH/patches/0015-SystemServiceRegistry-Replace-ArrayMap-with-HashMap-.patch
+echo "[i] Applying 0016-InsetsStateController-Replace-ArrayMap-with-HashMap-.patch"
+git am -3 $CATHEDRA_PATH/patches/0016-InsetsStateController-Replace-ArrayMap-with-HashMap-.patch
+echo "[i] Applying 0017-LocalServices-Replace-ArrayMap-with-HashMap-for-perf.patch"
+git am -3 $CATHEDRA_PATH/patches/0017-LocalServices-Replace-ArrayMap-with-HashMap-for-perf.patch
+echo "[i] Applying 0018-ThemedResourceCache-Replace-ArrayMap-with-HashMap-fo.patch"
+git am -3 $CATHEDRA_PATH/patches/0018-ThemedResourceCache-Replace-ArrayMap-with-HashMap-fo.patch
+echo "[i] Applying 0019-Trace-Disable-debug-tracing-on-production-builds.patch"
+git am -3 $CATHEDRA_PATH/patches/0019-Trace-Disable-debug-tracing-on-production-builds.patch
+echo "[i] Applying 0020-PackageInfo-Optimize-ApplicationInfo-creation.patch"
+git am -3 $CATHEDRA_PATH/patches/0020-PackageInfo-Optimize-ApplicationInfo-creation.patch
+echo "[i] Applying 0021-Revert-Pre-emptively-take-a-snapshot-when-finishing-.patch"
+git am -3 $CATHEDRA_PATH/patches/0021-Revert-Pre-emptively-take-a-snapshot-when-finishing-.patch
 cd $BASE_BUILD_DIR
 
 cd system/core
@@ -131,6 +147,14 @@ echo "[i] Applying 0001-Switch-to-an-assembler-macro-for-CFI_RESTORE_STATE_A.pat
 git am -3 $CATHEDRA_PATH/patches/clang-15/0001-Switch-to-an-assembler-macro-for-CFI_RESTORE_STATE_A.patch
 echo "[i] Applying 0002-Suppress-three-counts-of-compiler-warnings-for-frame.patch"
 git am -3 $CATHEDRA_PATH/patches/clang-15/0002-Suppress-three-counts-of-compiler-warnings-for-frame.patch
+echo "[i] Applying 0010-art-Disable-debug-tracing-on-production-builds.patch"
+git am -3 $CATHEDRA_PATH/patches/0010-art-Disable-debug-tracing-on-production-builds.patch
+echo "[i] Applying 0011-Reland-Trigger-fewer-GCs-during-startup.patch"
+git am -3 $CATHEDRA_PATH/patches/0011-Reland-Trigger-fewer-GCs-during-startup.patch
+echo "[i] Applying 0012-optimization-of-gc-load-reduce-gc-in-some-scenarios.patch"
+git am -3 $CATHEDRA_PATH/patches/0012-optimization-of-gc-load-reduce-gc-in-some-scenarios.patch
+echo "[i] Applying 0013-Fix-calculation-of-bytes-allocated-since-last-gc.patch"
+git am -3 $CATHEDRA_PATH/patches/0013-Fix-calculation-of-bytes-allocated-since-last-gc.patch
 cd $BASE_BUILD_DIR
 
 cd packages/modules/DnsResolver
