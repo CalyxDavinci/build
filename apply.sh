@@ -183,3 +183,8 @@ cd system/security
 echo "[i] Applying 0001-Fix-warnings-in-preparation-for-Rust-1.62.0.patch"
 git am -3 $CATHEDRA_PATH/patches/clang-15/0001-Fix-warnings-in-preparation-for-Rust-1.62.0.patch
 cd $BASE_BUILD_DIR
+
+cd system/extras
+echo "[i] Applying 0001-libprofcollectd-Fix-Rust-1.62-build-errors.patch"
+git am -3 $CATHEDRA_PATH/patches/clang-15/0001-libprofcollectd-Fix-Rust-1.62-build-errors.patch
+cd $BASE_BUILD_DIR
