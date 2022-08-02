@@ -1,0 +1,195 @@
+From c24a68aac3923b91cacea377096cc2ee587903d5 Mon Sep 17 00:00:00 2001
+From: Jens Reidel <adrian@travitia.xyz>
+Date: Thu, 21 Jul 2022 16:01:00 +0300
+Subject: [PATCH 1/4] Revert "Update chromium signing setup"
+
+This reverts commit 33d266a58772cd1daf664744ad0986d948f00188.
+---
+ scripts/metadata            | 14 --------------
+ scripts/mkcommonkeys.sh     |  4 +++-
+ scripts/mkkeystore.sh       | 26 ++++++++++++++++++++++++++
+ scripts/release.sh          |  1 -
+ scripts/sign-trichrome.sh   | 29 +++++++++++++++++++++++++++++
+ scripts/updatecommonkeys.sh | 11 +++--------
+ 6 files changed, 61 insertions(+), 24 deletions(-)
+ create mode 100755 scripts/mkkeystore.sh
+ create mode 100755 scripts/sign-trichrome.sh
+
+diff --git a/scripts/metadata b/scripts/metadata
+index d4f54b2..a852e66 100644
+--- a/scripts/metadata
++++ b/scripts/metadata
+@@ -14,12 +14,6 @@ apps=(
+ 	DejaVuLocationService
+ 	MozillaNlpBackend
+ 	NominatimNlpBackend
+-	TrichromeChrome
+-	universal
+-	TrichromeLibrary
+-	TrichromeLibrary6432
+-	TrichromeWebView
+-	TrichromeWebView6432
+ )
+ 
+ # Mapping from build/tools/releasetools
+@@ -40,7 +34,6 @@ keymap[microg]=microg
+ keymap[org.calyxos.nlp.dejavu]=org.calyxos.nlp.dejavu
+ keymap[org.calyxos.nlp.ichnaea]=org.calyxos.nlp.ichnaea
+ keymap[org.calyxos.nlp.nominatim]=org.calyxos.nlp.nominatim
+-keymap[chromium]=chromium
+ 
+ # Key used by that particular app, default is testkey
+ declare -A appkey
+@@ -57,12 +50,6 @@ appkey[FakeStore]=microg
+ appkey[DejaVuLocationService]=org.calyxos.nlp.dejavu
+ appkey[MozillaNlpBackend]=org.calyxos.nlp.ichnaea
+ appkey[NominatimNlpBackend]=org.calyxos.nlp.nominatim
+-appkey[TrichromeChrome]=chromium
+-appkey[universal]=chromium
+-appkey[TrichromeLibrary]=chromium
+-appkey[TrichromeLibrary6432]=chromium
+-appkey[TrichromeWebView]=chromium
+-appkey[TrichromeWebView6432]=chromium
+ 
+ # Extra keys for apps we sign
+ common_app_keys=(
+@@ -72,7 +59,6 @@ common_app_keys=(
+ 	org.calyxos.nlp.dejavu
+ 	org.calyxos.nlp.ichnaea
+ 	org.calyxos.nlp.nominatim
+-	chromium
+ )
+ 
+ # APEX keys
+diff --git a/scripts/mkcommonkeys.sh b/scripts/mkcommonkeys.sh
+index b621ad1..67da984 100755
+--- a/scripts/mkcommonkeys.sh
++++ b/scripts/mkcommonkeys.sh
+@@ -24,8 +24,10 @@ mkdir -p $KEY_DIR
+ 
+ pushd $KEY_DIR
+ 
++$SCRIPTPATH/mkkeystore.sh calyxos "$SUBJECT"
++
+ for k in "${common_app_keys[@]}"; do
+   $SCRIPTPATH/mkkey.sh "$k" "$SUBJECT"
+ done
+ 
+-popd
++popd
+\ No newline at end of file
+diff --git a/scripts/mkkeystore.sh b/scripts/mkkeystore.sh
+new file mode 100755
+index 0000000..a47dc0f
+--- /dev/null
++++ b/scripts/mkkeystore.sh
+@@ -0,0 +1,26 @@
++#!/bin/bash
++
++error() {
++  echo error: $1, please try again >&2
++  echo "Usage: $0 key_name subject"
++  echo "Example key_name: calyxos"
++  echo "Example subject: '/C=US/ST=California/L=Mountain View/O=Android/OU=Android/CN=Android/emailAddress=android@android.com'"
++  exit 1
++}
++
++[[ $# -eq 2 ]] ||  error "incorrect number of arguments"
++
++SCRIPTPATH="$(cd "$(dirname "$0")";pwd -P)"
++
++KEY_NAME=$1
++SUBJECT="$2"
++KEYTOOL=keytool
++
++[[ ! -e $(which ${KEYTOOL}) ]] && error "${KEYTOOL} not found in PATH."
++
++[[ -e ${KEY_NAME}.keystore ]] && error "key $KEY_NAME already exists"
++
++DNAME="$(echo $SUBJECT | tr -d "'" | sed "s#/#,#g")"
++DNAME=${DNAME:1}
++
++$KEYTOOL -genkey -v -keystore ${KEY_NAME}.keystore -alias ${KEY_NAME} -dname "$DNAME" -keyalg RSA -keysize 2048 -validity 10000
+\ No newline at end of file
+diff --git a/scripts/release.sh b/scripts/release.sh
+index d9be43c..58d4359 100755
+--- a/scripts/release.sh
++++ b/scripts/release.sh
+@@ -103,7 +103,6 @@ if [[ $DEVICE == jasmine_sprout ]]; then
+ fi
+ 
+ EXTRA_SIGNING_ARGS+=(-k prebuilts/calyx/microg/certs/microg=$KEY_DIR/../common/microg)
+-EXTRA_SIGNING_ARGS+=(-k external/calyx/chromium/certs/chromium=$KEY_DIR/../common/chromium)
+ EXTRA_SIGNING_ARGS+=(-k packages/modules/Connectivity/service/ServiceConnectivityResources/resources-certs/com.android.connectivity.resources=$KEY_DIR/com.android.connectivity.resources)
+ EXTRA_SIGNING_ARGS+=(-k packages/modules/Wifi/OsuLogin/certs/com.android.hotspot2.osulogin=$KEY_DIR/com.android.hotspot2.osulogin)
+ EXTRA_SIGNING_ARGS+=(-k packages/modules/Wifi/service/ServiceWifiResources/resources-certs/com.android.wifi.resources=$KEY_DIR/com.android.wifi.resources)
+diff --git a/scripts/sign-trichrome.sh b/scripts/sign-trichrome.sh
+new file mode 100755
+index 0000000..218e030
+--- /dev/null
++++ b/scripts/sign-trichrome.sh
+@@ -0,0 +1,29 @@
++#!/bin/bash
++# Signs the Trichrome apks
++
++SCRIPTPATH="$(cd "$(dirname "$0")";pwd -P)"
++TOP=$SCRIPTPATH/../../../
++
++source $SCRIPTPATH/metadata
++
++KEY_DIR=$TOP/keys/common
++APKSIGNER=$TOP/bin/apksigner
++KEY=${KEY_DIR}/calyxos.keystore
++
++error() {
++  echo error: $1, please try again >&2
++  echo "Usage: $0"
++  echo "Supported files: (TrichromeChrome6432) universal.apk TrichromeLibrary6432.apk TrichromeWebView6432.apk"
++  exit 1
++}
++
++[[ $# -eq 0 ]] || error "incorrect number of arguments"
++
++[[ ! -e ${KEY} ]] && error "$KEY not found"
++[[ ! -e universal.apk ]] && error "(TrichromeChrome6432) universal.apk not found"
++[[ ! -e TrichromeLibrary6432.apk ]] && error "TrichromeLibrary6432.apk not found"
++[[ ! -e TrichromeWebView6432.apk ]] && error "TrichromeWebView6432.apk not found"
++
++for APP in universal TrichromeLibrary6432 TrichromeWebView6432; do
++	$APKSIGNER sign --ks ${KEY} --ks-key-alias calyxos --in ${APP}.apk --out ${APP}-signed.apk
++done
+diff --git a/scripts/updatecommonkeys.sh b/scripts/updatecommonkeys.sh
+index d0d6581..daa3446 100755
+--- a/scripts/updatecommonkeys.sh
++++ b/scripts/updatecommonkeys.sh
+@@ -18,18 +18,13 @@ KEY_DIR=$1
+ SUBJECT="$2"
+ 
+ [[ ! -e $(which openssl) ]] && error "openssl not found in PATH."
+-[[ ! -e $(which keytool) ]] && error "keytool not found in PATH."
+ 
+ [[ ! -d $KEY_DIR ]] && error "key directory does not exist"
+ 
+ pushd $KEY_DIR
+ 
+-# Convert chromium keystore
+-if [[ -e calyxos.keystore ]]; then
+-  keytool -importkeystore -srckeystore calyxos.keystore -destkeystore calyxos.p12 -srcstoretype jks -deststoretype pkcs12
+-  openssl pkcs12 -in calyxos.p12 -out calyxos.pem -nodes && rm calyxos.p12
+-  openssl x509 -in calyxos.pem -out chromium.x509.pem
+-  openssl pkcs8 -in calyxos.pem -out chromium.pk8 -outform DER -topk8 -nocrypt && rm calyxos.pem
++if [[ ! -e calyxos.keystore ]]; then
++  $SCRIPTPATH/mkkeystore.sh calyxos "$SUBJECT"
+ fi
+ 
+ for k in "${common_app_keys[@]}"; do
+@@ -38,4 +33,4 @@ for k in "${common_app_keys[@]}"; do
+   fi
+ done
+ 
+-popd
++popd
+\ No newline at end of file
+-- 
+2.37.1
+

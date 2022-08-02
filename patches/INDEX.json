@@ -1,0 +1,42 @@
+{
+    "frameworks/base": [
+        "0001-core-jni-Switch-to-O3.patch",
+        "0002-LayoutInflater-Opportunistically-create-views-direct.patch",
+        "0003-SystemServiceRegistry-Replace-ArrayMap-with-HashMap-.patch",
+        "0004-InsetsStateController-Replace-ArrayMap-with-HashMap-.patch",
+        "0005-LocalServices-Replace-ArrayMap-with-HashMap-for-perf.patch",
+        "0006-ThemedResourceCache-Replace-ArrayMap-with-HashMap-fo.patch",
+        "0007-Trace-Disable-debug-tracing-on-production-builds.patch",
+        "0008-PackageInfo-Optimize-ApplicationInfo-creation.patch",
+        "0009-Revert-Pre-emptively-take-a-snapshot-when-finishing-.patch"
+    ],
+    "system/core": [
+        "0010-Revert-libfs_avb-verifying-vbmeta-digest-early.patch"
+    ],
+    "build/make": [
+        "0011-Revert-otatools-Copy-our-keys.patch"
+    ],
+    "build/soong": [
+        "0012-soong-clang-builds-with-O3.patch",
+        "0013-soong-Disable-clang-tidy.patch"
+    ],
+    "build/tools": [
+        "0014-build-add-erofs-support.patch",
+        "0015-releasetools-use-first-entry-of-mountpoint.patch"
+    ],
+    "system/extras": [
+        "0016-add-fstab-entry-for-erofs-postinstall.patch"
+    ],
+    "vendor/calyx": [
+        "0017-Revert-Update-chromium-signing-setup.patch",
+        "0018-Use-bromite-instead-of-chromium-webview.patch",
+        "0019-build-Flatten-APEXs-for-performance.patch",
+        "0020-build-Set-ro.apex.updatable-false-in-product-propert.patch"
+    ],
+    "art": [
+        "0021-art-Disable-debug-tracing-on-production-builds.patch",
+        "0022-Reland-Trigger-fewer-GCs-during-startup.patch",
+        "0023-optimization-of-gc-load-reduce-gc-in-some-scenarios.patch",
+        "0024-Fix-calculation-of-bytes-allocated-since-last-gc.patch"
+    ]
+}

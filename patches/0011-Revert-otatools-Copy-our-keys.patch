@@ -1,0 +1,30 @@
+From 7b0e6d802694dd0a2b493cb32d42274830200f0a Mon Sep 17 00:00:00 2001
+From: Jens Reidel <adrian@travitia.xyz>
+Date: Thu, 21 Jul 2022 16:01:00 +0300
+Subject: [PATCH 1/4] Revert "otatools: Copy our keys"
+
+This reverts commit 725ff3afb0bead002c55262061a015fb7b8ab744.
+---
+ core/Makefile | 6 ------
+ 1 file changed, 6 deletions(-)
+
+diff --git a/core/Makefile b/core/Makefile
+index e43223c73..46b0fa725 100644
+--- a/core/Makefile
++++ b/core/Makefile
+@@ -4436,12 +4436,6 @@ INTERNAL_OTATOOLS_PACKAGE_FILES += \
+   vendor/calyx/scripts/sign-app.sh \
+   vendor/calyx/scripts/metadata
+ 
+-INTERNAL_OTATOOLS_PACKAGE_FILES += \
+-  $(sort $(shell find external/calyx -type f -name "*.x509.pem" -o -name "*.pk8"))
+-
+-INTERNAL_OTATOOLS_PACKAGE_FILES += \
+-  $(sort $(shell find prebuilts/calyx -type f -name "*.x509.pem" -o -name "*.pk8"))
+-
+ # Only for key creation
+ INTERNAL_OTATOOLS_KEYS_PACKAGE_FILES := \
+   $(INTERNAL_OTATOOLS_PACKAGE_FILES) \
+-- 
+2.37.1
+
