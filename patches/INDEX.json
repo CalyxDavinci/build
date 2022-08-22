@@ -14,29 +14,32 @@
         "0010-Revert-libfs_avb-verifying-vbmeta-digest-early.patch"
     ],
     "build/make": [
-        "0011-Revert-otatools-Copy-our-keys.patch"
+        "0011-Revert-otatools-Copy-our-keys.patch",
+        "0012-Bump-Security-String-to-2022-08-05.patch"
     ],
     "build/soong": [
-        "0012-soong-clang-builds-with-O3.patch",
-        "0013-soong-Disable-clang-tidy.patch"
+        "0013-soong-clang-builds-with-O3.patch",
+        "0014-soong-Disable-clang-tidy.patch"
     ],
     "build/tools": [
-        "0014-build-add-erofs-support.patch",
-        "0015-releasetools-use-first-entry-of-mountpoint.patch"
+        "0015-build-add-erofs-support.patch",
+        "0016-releasetools-use-first-entry-of-mountpoint.patch"
     ],
     "system/extras": [
-        "0016-add-fstab-entry-for-erofs-postinstall.patch"
+        "0017-add-fstab-entry-for-erofs-postinstall.patch"
     ],
     "vendor/calyx": [
-        "0017-Revert-Update-chromium-signing-setup.patch",
-        "0018-Use-bromite-instead-of-chromium-webview.patch",
-        "0019-build-Flatten-APEXs-for-performance.patch",
-        "0020-build-Set-ro.apex.updatable-false-in-product-propert.patch"
+        "0018-Revert-Update-chromium-signing-setup.patch",
+        "0019-Use-bromite-instead-of-chromium-webview.patch",
+        "0020-build-Flatten-APEXs-for-performance.patch",
+        "0021-build-Set-ro.apex.updatable-false-in-product-propert.patch",
+        "0022-Disable-Bellis-and-Firewall.patch",
+        "0023-CalyxOS-3.8.0.patch"
     ],
     "art": [
-        "0021-art-Disable-debug-tracing-on-production-builds.patch",
-        "0022-Reland-Trigger-fewer-GCs-during-startup.patch",
-        "0023-optimization-of-gc-load-reduce-gc-in-some-scenarios.patch",
-        "0024-Fix-calculation-of-bytes-allocated-since-last-gc.patch"
+        "0024-art-Disable-debug-tracing-on-production-builds.patch",
+        "0025-Reland-Trigger-fewer-GCs-during-startup.patch",
+        "0026-optimization-of-gc-load-reduce-gc-in-some-scenarios.patch",
+        "0027-Fix-calculation-of-bytes-allocated-since-last-gc.patch"
     ]
 }

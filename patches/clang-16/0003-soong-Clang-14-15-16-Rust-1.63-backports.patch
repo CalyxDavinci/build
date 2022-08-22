@@ -1,7 +1,7 @@
-From e83125962ccbd1d9c5a5f620abbe3a0f28768ae4 Mon Sep 17 00:00:00 2001
+From 5ea4b05b2201a5e39d79308f3a6ffb42d09e7c4f Mon Sep 17 00:00:00 2001
 From: Jens Reidel <adrian@travitia.xyz>
 Date: Sun, 5 Jun 2022 15:53:01 +0300
-Subject: [PATCH] soong: Clang 14/15/16, Rust 1.62 backports
+Subject: [PATCH] soong: Clang 14/15/16, Rust 1.63 backports
 
 Change-Id: I991a34020a15ac1eaad1f8da800b82bbc20d6668
 ---
@@ -431,7 +431,7 @@ index 1598ebf9a..322cd3bea 100644
  			deps.Stdlibs = append(deps.Stdlibs, stdlib)
  		}
 diff --git a/rust/config/global.go b/rust/config/global.go
-index 1b56237b3..9ecbb89db 100644
+index 1b56237b3..4b292dcf9 100644
 --- a/rust/config/global.go
 +++ b/rust/config/global.go
 @@ -24,7 +24,7 @@ import (
@@ -439,7 +439,7 @@ index 1b56237b3..9ecbb89db 100644
  
  var (
 -	RustDefaultVersion = "1.51.0"
-+	RustDefaultVersion = "1.62.0.p1"
++	RustDefaultVersion = "1.63.0"
  	RustDefaultBase    = "prebuilts/rust/"
  	DefaultEdition     = "2018"
  	Stdlibs            = []string{
@@ -814,5 +814,5 @@ index 000000000..f9431eb51
 +	return ctx.AConfig().GetenvWithDefault("RUST_PREBUILTS_VERSION", config.RustDefaultVersion)
 +}
 -- 
-2.37.1
+2.37.2
 

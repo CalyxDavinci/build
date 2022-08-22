@@ -1,9 +1,8 @@
-FROM registry.fedoraproject.org/fedora-minimal:36
+FROM registry.fedoraproject.org/fedora-minimal:rawhide
 
 RUN microdnf install -y \
              git \
              bison \
-             ncurses-compat-libs \
              which \
              ccache \
              perl \

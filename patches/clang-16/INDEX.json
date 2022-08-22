@@ -4,7 +4,7 @@
         "0002-services.incremental-Use-shared-libutils-for-remount.patch"
     ],
     "build/soong": [
-        "0003-soong-Clang-14-15-16-Rust-1.62-backports.patch"
+        "0003-soong-Clang-14-15-16-Rust-1.63-backports.patch"
     ],
     "bionic": [
         "0004-Reland-Use-the-dynamic-table-instead-of-__rela-_iplt.patch"
@@ -56,12 +56,13 @@
     ],
     "system/bt": [
         "0024-bt-Add-missing-dependencies-on-libbase.patch",
-        "0025-floss-Remove-noop-std-move-task_.patch"
+        "0025-floss-Remove-noop-std-move-task_.patch",
+        "0026-bt-Fix-warnings-in-preparation-for-Rust-1.63.0.patch"
     ],
     "system/security": [
-        "0026-Fix-warnings-in-preparation-for-Rust-1.62.0.patch"
+        "0027-Fix-warnings-in-preparation-for-Rust-1.63.0.patch"
     ],
     "system/connectivity/wificond": [
-        "0027-Remove-libutils.a-whole_static_lib-from-libwificond_.patch"
+        "0028-Remove-libutils.a-whole_static_lib-from-libwificond_.patch"
     ]
 }
