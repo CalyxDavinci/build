@@ -27,7 +27,7 @@
    <project path="hardware/xiaomi" name="CalyxDavinci/android_hardware_xiaomi" remote="calyxd-github" revision="lineage-19.1" />
 
    <project path="external/erofs-utils" name="platform/external/erofs-utils" remote="aosp" revision="master" />
-   <project path="external/zlib-ng" name="CalyxDavinci/android_external_zlib-ng" remote="calyxd-github" revision="sc-v2" />
+   <project path="external/zlib-ng" name="CalyxDavinci/android_external_zlib-ng" remote="calyxd-github" revision="sc-qpr3" />
    <project path="system/memory/lmkd" name="YAAP/system_memory_lmkd" remote="calyxd-github" revision="twelve" />
 
    <project path="external/bromite-webview" name="CalyxDavinci/platform_external_bromite-webview" remote="calyxd-gitlab" revision="12.1" />
