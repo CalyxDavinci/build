@@ -34,4 +34,7 @@
 
    <!-- More recent Rust -->
    <project path="prebuilts/rust" name="platform/prebuilts/rust" remote="aosp" clone-depth="1" revision="master" />
+
+   <!-- Better default Camera app -->
+   <project path="external/Selfie" name="CalyxDavinci/platform_external_Selfie" remote="calyxd-github" revision="main" />
 </manifest>
