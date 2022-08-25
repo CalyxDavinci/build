@@ -34,12 +34,13 @@
         "0020-build-Flatten-APEXs-for-performance.patch",
         "0021-build-Set-ro.apex.updatable-false-in-product-propert.patch",
         "0022-Disable-Bellis-and-Firewall.patch",
-        "0023-CalyxOS-3.8.0.patch"
+        "0023-CalyxOS-3.8.0.patch",
+        "0024-vendor-Include-Selfie.patch"
     ],
     "art": [
-        "0024-art-Disable-debug-tracing-on-production-builds.patch",
-        "0025-Reland-Trigger-fewer-GCs-during-startup.patch",
-        "0026-optimization-of-gc-load-reduce-gc-in-some-scenarios.patch",
-        "0027-Fix-calculation-of-bytes-allocated-since-last-gc.patch"
+        "0025-art-Disable-debug-tracing-on-production-builds.patch",
+        "0026-Reland-Trigger-fewer-GCs-during-startup.patch",
+        "0027-optimization-of-gc-load-reduce-gc-in-some-scenarios.patch",
+        "0028-Fix-calculation-of-bytes-allocated-since-last-gc.patch"
     ]
 }

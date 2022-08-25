@@ -1,0 +1,25 @@
+From 5894c828942a48df3fb4957e82e4432aa4d79a4d Mon Sep 17 00:00:00 2001
+From: Jens Reidel <adrian@travitia.xyz>
+Date: Thu, 25 Aug 2022 17:16:36 +0300
+Subject: [PATCH] vendor: Include Selfie
+
+Change-Id: Id7e14c3bfd629ce2486a86902e5239d5e995ff25
+---
+ config/common.mk | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/config/common.mk b/config/common.mk
+index 2c4d095..cd3aff5 100644
+--- a/config/common.mk
++++ b/config/common.mk
+@@ -84,6 +84,7 @@ PRODUCT_PACKAGES += \
+     Eleven \
+     Recorder \
+     Seedvault \
++    Selfie \
+     Ripple \
+     webview
+ 
+-- 
+2.37.2
+
