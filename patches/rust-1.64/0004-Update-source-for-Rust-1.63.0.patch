@@ -1,0 +1,190 @@
+From d7f5df6b29471617a5d582e9f793048592028d58 Mon Sep 17 00:00:00 2001
+From: Chris Wailes <chriswailes@google.com>
+Date: Thu, 11 Aug 2022 15:00:51 -0700
+Subject: [PATCH] Update source for Rust 1.63.0
+
+Test: m rust
+Bug: 241303140
+Change-Id: I3b4d8c1c3101941258e366279bfd2a4a3ab1b948
+---
+ diced/open_dice_cbor/lib.rs     | 2 +-
+ diced/src/permission.rs         | 2 +-
+ keystore2/legacykeystore/lib.rs | 8 +++++++-
+ keystore2/selinux/src/lib.rs    | 2 +-
+ keystore2/src/apc.rs            | 2 +-
+ keystore2/src/authorization.rs  | 2 +-
+ keystore2/src/crypto/lib.rs     | 2 +-
+ keystore2/src/error.rs          | 2 +-
+ keystore2/src/globals.rs        | 2 +-
+ keystore2/src/operation.rs      | 2 +-
+ keystore2/src/permission.rs     | 4 ++--
+ 11 files changed, 18 insertions(+), 12 deletions(-)
+
+diff --git a/diced/open_dice_cbor/lib.rs b/diced/open_dice_cbor/lib.rs
+index 7122ca5..19c80c0 100644
+--- a/diced/open_dice_cbor/lib.rs
++++ b/diced/open_dice_cbor/lib.rs
+@@ -74,7 +74,7 @@ pub const PUBLIC_KEY_SIZE: usize = DICE_PUBLIC_KEY_SIZE as usize;
+ pub const SIGNATURE_SIZE: usize = DICE_SIGNATURE_SIZE as usize;
+ 
+ /// Open dice wrapper error type.
+-#[derive(Debug, thiserror::Error, PartialEq)]
++#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+ pub enum Error {
+     /// The libopen-dice backend reported InvalidInput.
+     #[error("Open dice backend: Invalid input")]
+diff --git a/diced/src/permission.rs b/diced/src/permission.rs
+index 116df1b..62ca653 100644
+--- a/diced/src/permission.rs
++++ b/diced/src/permission.rs
+@@ -21,7 +21,7 @@ use selinux::{implement_class, ClassPermission};
+ implement_class!(
+     /// Permission provides a convenient abstraction from the SELinux class `diced`.
+     #[selinux(class_name = diced)]
+-    #[derive(Clone, Copy, Debug, PartialEq)]
++    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+     pub enum Permission {
+         /// Checked when a client attempts to call seal or unseal.
+         #[selinux(name = use_seal)]
+diff --git a/keystore2/legacykeystore/lib.rs b/keystore2/legacykeystore/lib.rs
+index e2d952d..95f917a 100644
+--- a/keystore2/legacykeystore/lib.rs
++++ b/keystore2/legacykeystore/lib.rs
+@@ -108,6 +108,12 @@ impl DB {
+                 .prepare("SELECT alias FROM profiles WHERE owner = ? ORDER BY alias ASC;")
+                 .context("In list: Failed to prepare statement.")?;
+ 
++            // This allow is necessary to avoid the following error:
++            //
++            // error[E0597]: `stmt` does not live long enough
++            //
++            // See: https://github.com/rust-lang/rust-clippy/issues/8114
++            #[allow(clippy::let_and_return)]
+             let aliases = stmt
+                 .query_map(params![caller_uid], |row| row.get(0))?
+                 .collect::<rusqlite::Result<Vec<String>>>()
+@@ -172,7 +178,7 @@ impl DB {
+ 
+ /// This is the main LegacyKeystore error type, it wraps binder exceptions and the
+ /// LegacyKeystore errors.
+-#[derive(Debug, thiserror::Error, PartialEq)]
++#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+ pub enum Error {
+     /// Wraps a LegacyKeystore error code.
+     #[error("Error::Error({0:?})")]
+diff --git a/keystore2/selinux/src/lib.rs b/keystore2/selinux/src/lib.rs
+index c0593b7..e5c3091 100644
+--- a/keystore2/selinux/src/lib.rs
++++ b/keystore2/selinux/src/lib.rs
+@@ -65,7 +65,7 @@ fn init_logger_once() {
+ }
+ 
+ /// Selinux Error code.
+-#[derive(thiserror::Error, Debug, PartialEq)]
++#[derive(thiserror::Error, Debug, PartialEq, Eq)]
+ pub enum Error {
+     /// Indicates that an access check yielded no access.
+     #[error("Permission Denied")]
+diff --git a/keystore2/src/apc.rs b/keystore2/src/apc.rs
+index 7d56dc9..1dc14ea 100644
+--- a/keystore2/src/apc.rs
++++ b/keystore2/src/apc.rs
+@@ -39,7 +39,7 @@ use std::time::{Duration, Instant};
+ 
+ /// This is the main APC error type, it wraps binder exceptions and the
+ /// APC ResponseCode.
+-#[derive(Debug, thiserror::Error, PartialEq)]
++#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+ pub enum Error {
+     /// Wraps an Android Protected Confirmation (APC) response code as defined by the
+     /// android.security.apc AIDL interface specification.
+diff --git a/keystore2/src/authorization.rs b/keystore2/src/authorization.rs
+index 8265dd0..666daeb 100644
+--- a/keystore2/src/authorization.rs
++++ b/keystore2/src/authorization.rs
+@@ -38,7 +38,7 @@ use keystore2_selinux as selinux;
+ 
+ /// This is the Authorization error type, it wraps binder exceptions and the
+ /// Authorization ResponseCode
+-#[derive(Debug, thiserror::Error, PartialEq)]
++#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+ pub enum Error {
+     /// Wraps an IKeystoreAuthorization response code as defined by
+     /// android.security.authorization AIDL interface specification.
+diff --git a/keystore2/src/crypto/lib.rs b/keystore2/src/crypto/lib.rs
+index 14bdf04..54e1948 100644
+--- a/keystore2/src/crypto/lib.rs
++++ b/keystore2/src/crypto/lib.rs
+@@ -190,7 +190,7 @@ impl<'a> Password<'a> {
+     fn get_key(&'a self) -> &'a [u8] {
+         match self {
+             Self::Ref(b) => b,
+-            Self::Owned(z) => &*z,
++            Self::Owned(z) => z,
+         }
+     }
+ 
+diff --git a/keystore2/src/error.rs b/keystore2/src/error.rs
+index f34c5da..b60b64f 100644
+--- a/keystore2/src/error.rs
++++ b/keystore2/src/error.rs
+@@ -41,7 +41,7 @@ use std::ffi::CString;
+ 
+ /// This is the main Keystore error type. It wraps the Keystore `ResponseCode` generated
+ /// from AIDL in the `Rc` variant and Keymint `ErrorCode` in the Km variant.
+-#[derive(Debug, thiserror::Error, PartialEq)]
++#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+ pub enum Error {
+     /// Wraps a Keystore `ResponseCode` as defined by the Keystore AIDL interface specification.
+     #[error("Error::Rc({0:?})")]
+diff --git a/keystore2/src/globals.rs b/keystore2/src/globals.rs
+index 70b78ba..edbe6ce 100644
+--- a/keystore2/src/globals.rs
++++ b/keystore2/src/globals.rs
+@@ -186,7 +186,7 @@ lazy_static! {
+             Box::new(|uuid, blob| {
+                 let km_dev = get_keymint_dev_by_uuid(uuid).map(|(dev, _)| dev)?;
+                 let _wp = wd::watch_millis("In invalidate key closure: calling deleteKey", 500);
+-                map_km_error(km_dev.deleteKey(&*blob))
++                map_km_error(km_dev.deleteKey(blob))
+                     .context("In invalidate key closure: Trying to invalidate key blob.")
+             }),
+             KeystoreDB::new(&DB_PATH.read().expect("Could not get the database directory."), None)
+diff --git a/keystore2/src/operation.rs b/keystore2/src/operation.rs
+index 5da3b32..4f33ba6 100644
+--- a/keystore2/src/operation.rs
++++ b/keystore2/src/operation.rs
+@@ -790,7 +790,7 @@ impl KeystoreOperation {
+             Ok(mut mutex_guard) => {
+                 let result = match &*mutex_guard {
+                     Some(op) => {
+-                        let result = f(&*op);
++                        let result = f(op);
+                         // Any error here means we can discard the operation.
+                         if result.is_err() {
+                             delete_op = true;
+diff --git a/keystore2/src/permission.rs b/keystore2/src/permission.rs
+index 22509c4..f17577f 100644
+--- a/keystore2/src/permission.rs
++++ b/keystore2/src/permission.rs
+@@ -53,7 +53,7 @@ implement_class!(
+     /// the SELinux permissions.
+     #[repr(i32)]
+     #[selinux(class_name = keystore2_key)]
+-    #[derive(Clone, Copy, Debug, PartialEq)]
++    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+     pub enum KeyPerm {
+         /// Checked when convert_storage_key_to_ephemeral is called.
+         #[selinux(name = convert_storage_key_to_ephemeral)]
+@@ -97,7 +97,7 @@ implement_class!(
+     /// KeystorePerm provides a convenient abstraction from the SELinux class `keystore2`.
+     /// Using the implement_permission macro we get the same features as `KeyPerm`.
+     #[selinux(class_name = keystore2)]
+-    #[derive(Clone, Copy, Debug, PartialEq)]
++    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+     pub enum KeystorePerm {
+         /// Checked when a new auth token is installed.
+         #[selinux(name = add_auth)]
+-- 
+2.37.3
+

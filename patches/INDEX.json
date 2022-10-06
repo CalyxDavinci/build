@@ -1,46 +1,83 @@
 {
-    "frameworks/base": [
-        "0001-core-jni-Switch-to-O3.patch",
-        "0002-LayoutInflater-Opportunistically-create-views-direct.patch",
-        "0003-SystemServiceRegistry-Replace-ArrayMap-with-HashMap-.patch",
-        "0004-InsetsStateController-Replace-ArrayMap-with-HashMap-.patch",
-        "0005-LocalServices-Replace-ArrayMap-with-HashMap-for-perf.patch",
-        "0006-ThemedResourceCache-Replace-ArrayMap-with-HashMap-fo.patch",
-        "0007-Trace-Disable-debug-tracing-on-production-builds.patch",
-        "0008-PackageInfo-Optimize-ApplicationInfo-creation.patch",
-        "0009-Revert-Pre-emptively-take-a-snapshot-when-finishing-.patch"
-    ],
-    "system/core": [
-        "0010-Revert-libfs_avb-verifying-vbmeta-digest-early.patch"
-    ],
-    "build/make": [
-        "0011-Revert-otatools-Copy-our-keys.patch",
-        "0012-Bump-Security-String-to-2022-08-05.patch"
-    ],
     "build/soong": [
-        "0013-soong-clang-builds-with-O3.patch",
-        "0014-soong-Disable-clang-tidy.patch"
-    ],
-    "build/tools": [
-        "0015-build-add-erofs-support.patch",
-        "0016-releasetools-use-first-entry-of-mountpoint.patch"
-    ],
-    "system/extras": [
-        "0017-add-fstab-entry-for-erofs-postinstall.patch"
+        "0001-soong-Disable-clang-tidy.patch",
+        "0002-soong-clang-builds-with-O3.patch",
+        "0003-support-slice-product-variables-from-Make-to-Soong.patch"
     ],
     "vendor/calyx": [
-        "0018-Revert-Update-chromium-signing-setup.patch",
-        "0019-Use-bromite-instead-of-chromium-webview.patch",
-        "0020-build-Flatten-APEXs-for-performance.patch",
-        "0021-build-Set-ro.apex.updatable-false-in-product-propert.patch",
-        "0022-Disable-Bellis-and-Firewall.patch",
-        "0023-CalyxOS-3.8.0.patch",
-        "0024-vendor-Include-Selfie.patch"
+        "0004-config-Use-adrian-clang-for-kernel-build-by-default.patch",
+        "0005-build-Flatten-APEXs-for-performance.patch",
+        "0006-build-Set-ro.apex.updatable-false-in-product-propert.patch",
+        "0007-Disable-Bellis-and-Firewall.patch",
+        "0008-vendor-Include-Aperture.patch"
+    ],
+    "build/tools": [
+        "0009-releasetools-Use-the-first-entry-of-a-mount-point-wh.patch"
+    ],
+    "frameworks/base": [
+        "0010-core-jni-Switch-to-O3.patch",
+        "0011-LayoutInflater-Opportunistically-create-views-direct.patch",
+        "0012-SystemServiceRegistry-Replace-ArrayMap-with-HashMap-.patch",
+        "0013-InsetsStateController-Replace-ArrayMap-with-HashMap-.patch",
+        "0014-LocalServices-Replace-ArrayMap-with-HashMap-for-perf.patch",
+        "0015-ThemedResourceCache-Replace-ArrayMap-with-HashMap-fo.patch",
+        "0016-Trace-Disable-debug-tracing-on-production-builds.patch",
+        "0017-PackageInfo-Optimize-ApplicationInfo-creation.patch",
+        "0018-Revert-Pre-emptively-take-a-snapshot-when-finishing-.patch",
+        "0019-udfps-Restore-illumination-dot-for-global-hbm.patch",
+        "0020-udfps-Trigger-onFingerDown-with-regular-action-down-.patch",
+        "0021-udfps-Implement-default-udfps-hbm-provider.patch",
+        "0022-udfps-Change-window-type-to-TYPE_DISPLAY_OVERLAY.patch",
+        "0023-udfps-Make-pressed-udfp-view-configurable.patch",
+        "0024-SystemUI-Apply-monet-to-fingerprint-authentication-r.patch"
+    ],
+    "frameworks/native": [
+        "0025-surfaceflinger-Add-support-for-Udfps-extension-lib.patch",
+        "0026-CompositionEngine-Request-device-composition-for-the.patch"
+    ],
+    "packages/apps/Settings": [
+        "0027-Settings-Make-kernel-version-clickable.patch",
+        "0028-Settings-Show-full-proc-version-information.patch",
+        "0029-Settings-Change-kernel-preference-behavior.patch",
+        "0030-deviceinfo-Add-device-name-inside-settings-firmwarev.patch"
+    ],
+    "packages/apps/Aperture": [
+        "0031-Aperture-Override-Camera2.patch"
     ],
     "art": [
-        "0025-art-Disable-debug-tracing-on-production-builds.patch",
-        "0026-Reland-Trigger-fewer-GCs-during-startup.patch",
-        "0027-optimization-of-gc-load-reduce-gc-in-some-scenarios.patch",
-        "0028-Fix-calculation-of-bytes-allocated-since-last-gc.patch"
+        "0032-art-Disable-debug-tracing-on-production-builds.patch"
+    ],
+    "system/core": [
+        "0033-Revert-libfs_avb-verifying-vbmeta-digest-early.patch",
+        "0034-Add-wrapped-key-support.patch"
+    ],
+    "system/security": [
+        "0035-Handle-key-parameter-conversion-for-FBE_ICE-tag.patch"
+    ],
+    "system/vold": [
+        "0036-system-vold-Use-wrapped-key-for-metadata-encryption.patch",
+        "0037-vold-Enable-legacy-support-for-wrapped-key.patch",
+        "0038-vold-Bring-in-more-wrapped-key-changes.patch"
+    ],
+    "external/elfutils": [
+        "0039-Don-t-compile-crc32.c-directly.patch"
+    ],
+    "bionic": [
+        "0040-bionic-Introduce-high-performance-mimalloc-memory-al.patch",
+        "0041-bionic-Turn-to-mimalloc.patch",
+        "0042-bionic-Don-t-explicitly-set-scudo-in-common-parts.patch"
+    ],
+    "bootable/recovery": [
+        "0043-Convert-updater-Android.mk-to-Android.bp.patch",
+        "0044-updater-Disable-LTO.patch"
+    ],
+    "build/core": [
+        "0045-Add-two-product-variables-in-Soong.patch"
+    ],
+    "hardware/interfaces": [
+        "0046-keymasterV4_0-Tags-support-for-FBE-wrapped-key.patch"
+    ],
+    "prebuilts/calyx/chromium/arm64": [
+        "0047-chromium-Nuke-Chromium-only-keep-WebView.patch"
     ]
 }

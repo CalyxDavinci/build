@@ -1,4 +1,4 @@
-From 1932ec5d615dd2ca47131f4d244b6e3fc0735f21 Mon Sep 17 00:00:00 2001
+From 615e059be1f8cd8c77f523e7125e7aa6e8fc8f84 Mon Sep 17 00:00:00 2001
 From: Jens Reidel <adrian@travitia.xyz>
 Date: Mon, 22 Aug 2022 23:16:22 +0300
 Subject: [PATCH] config: Use adrian-clang for kernel build by default
@@ -9,7 +9,7 @@ Change-Id: I88126de65be7b43787897da2a9f2f22212c5df54
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/config/BoardConfigKernel.mk b/config/BoardConfigKernel.mk
-index ce19b35..f620007 100644
+index ce19b35..5bb40c1 100644
 --- a/config/BoardConfigKernel.mk
 +++ b/config/BoardConfigKernel.mk
 @@ -58,7 +58,7 @@ KERNEL_VERSION := $(shell grep -s "^VERSION = " $(TARGET_KERNEL_SOURCE)/Makefile
@@ -17,7 +17,7 @@ index ce19b35..f620007 100644
  TARGET_KERNEL_VERSION ?= $(shell echo $(KERNEL_VERSION)"."$(KERNEL_PATCHLEVEL))
  
 -CLANG_PREBUILTS := $(BUILD_TOP)/prebuilts/clang/host/$(HOST_PREBUILT_TAG)/clang-r416183b1
-+CLANG_PREBUILTS := $(BUILD_TOP)/prebuilts/clang/host/$(HOST_PREBUILT_TAG)/adrian-clang-2
++CLANG_PREBUILTS := $(BUILD_TOP)/prebuilts/clang/host/$(HOST_PREBUILT_TAG)/adrian-clang
  GCC_PREBUILTS := $(BUILD_TOP)/prebuilts/gcc/$(HOST_PREBUILT_TAG)
  # arm64 toolchain
  KERNEL_TOOLCHAIN_arm64 := $(GCC_PREBUILTS)/aarch64/aarch64-linux-android-4.9/bin

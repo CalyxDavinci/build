@@ -1,0 +1,258 @@
+From f05dae226f6b027d09edd05baeb6d9e89a9185a2 Mon Sep 17 00:00:00 2001
+From: Yuntao Xu <yuntaoxu@google.com>
+Date: Fri, 21 Jan 2022 14:21:32 -0800
+Subject: [PATCH] Convert updater/Android.mk to Android.bp
+
+Converted the Make file to a Soong one.
+
+Bug: 205649904
+Bug: 204485376
+Test: compared the two results built by Make and Soong
+Test: TreeHugger
+Change-Id: Ice52b1ca7c91862fa8777fbfaf70f3f8a3855999
+---
+ Android.mk         |   3 --
+ updater/Android.bp |  93 +++++++++++++++++++++++++++++++++++
+ updater/Android.mk | 118 ---------------------------------------------
+ 3 files changed, 93 insertions(+), 121 deletions(-)
+ delete mode 100644 updater/Android.mk
+
+diff --git a/Android.mk b/Android.mk
+index 8506040f..730a0d91 100644
+--- a/Android.mk
++++ b/Android.mk
+@@ -83,6 +83,3 @@ LOCAL_REQUIRED_MODULES += recovery-refresh
+ endif
+ 
+ include $(BUILD_PHONY_PACKAGE)
+-
+-include \
+-    $(LOCAL_PATH)/updater/Android.mk \
+diff --git a/updater/Android.bp b/updater/Android.bp
+index 35debaaf..dd05d71a 100644
+--- a/updater/Android.bp
++++ b/updater/Android.bp
+@@ -198,3 +198,96 @@ cc_binary_host {
+         },
+     },
+ }
++
++genrule {
++    name: "register.inc",
++    out: ["register.inc"],
++    cmd: "touch $(out)",
++    product_variables: {
++        target_recovery_updater_libs: {
++            cmd: "libs=%s && " +
++                "for lib in $$(libs); do " +
++                "echo \"extern void Register_$${lib}(void);\" >> $(out); " +
++                "done && " +
++                "echo \"void RegisterDeviceExtensions() {\" >> $(out) && " +
++                "for lib in $$(libs); do " +
++                "echo \"  Register_$${lib}();\" >> $(out); " +
++                "done && " +
++                "echo \"}\" >> $(out) ",
++        }
++    }
++}
++
++cc_binary {
++    name: "updater",
++    defaults: [
++        "target_recovery_updater_libs",
++        "target_recovery_updater_extra_libs",
++    ],
++    srcs: ["updater_main.cpp"],
++    local_include_dirs: ["include"],
++    static_libs: [
++        "libupdater_device",
++        "libupdater_core",
++        "libapplypatch",
++        "libbootloader_message",
++        "libbspatch",
++        "libedify",
++        "libotautil",
++        "libext4_utils",
++        "libdm",
++        "libfec",
++        "libfec_rs",
++        "libavb",
++        "libverity_tree",
++        "liblog",
++        "liblp",
++        "libselinux",
++        "libsparse",
++        "libsquashfs_utils",
++        "libbrotli",
++        "libbz",
++        "libziparchive",
++        "libz",
++        "libbase",
++        "libcrypto_static",
++        "libcrypto_utils",
++        "libcutils",
++        "libutils",
++        "libext2_com_err",
++        "libext2_blkid",
++        "libext2_quota",
++        "libext2_uuid",
++        "libext2_e2p",
++        "libext2fs",
++        "libfs_mgr",
++        "libtune2fs",
++    ],
++    header_libs: ["libgtest_prod_headers"],
++    generated_headers: [
++       "register.inc",
++    ],
++    static_executable: true,
++}
++
++cc_defaults {
++    name: "target_recovery_updater_libs",
++    product_variables: {
++        target_recovery_updater_libs: {
++            static_libs:[
++                "%s",
++            ],
++        }
++    }
++}
++
++cc_defaults {
++    name: "target_recovery_updater_extra_libs",
++    product_variables: {
++        target_recovery_updater_extra_libs: {
++            static_libs:[
++                "%s",
++            ],
++        }
++    }
++}
+diff --git a/updater/Android.mk b/updater/Android.mk
+deleted file mode 100644
+index bb1c07d4..00000000
+--- a/updater/Android.mk
++++ /dev/null
+@@ -1,118 +0,0 @@
+-# Copyright 2009 The Android Open Source Project
+-#
+-# Licensed under the Apache License, Version 2.0 (the "License");
+-# you may not use this file except in compliance with the License.
+-# You may obtain a copy of the License at
+-#
+-#      http://www.apache.org/licenses/LICENSE-2.0
+-#
+-# Unless required by applicable law or agreed to in writing, software
+-# distributed under the License is distributed on an "AS IS" BASIS,
+-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-# See the License for the specific language governing permissions and
+-# limitations under the License.
+-
+-LOCAL_PATH := $(call my-dir)
+-
+-tune2fs_static_libraries := \
+-    libext2_com_err \
+-    libext2_blkid \
+-    libext2_quota \
+-    libext2_uuid \
+-    libext2_e2p \
+-    libext2fs
+-
+-updater_common_static_libraries := \
+-    libapplypatch \
+-    libbootloader_message \
+-    libbspatch \
+-    libedify \
+-    libotautil \
+-    libext4_utils \
+-    libdm \
+-    libfec \
+-    libfec_rs \
+-    libavb \
+-    libverity_tree \
+-    liblog \
+-    liblp \
+-    libselinux \
+-    libsparse \
+-    libsquashfs_utils \
+-    libbrotli \
+-    libbz \
+-    libziparchive \
+-    libz \
+-    libbase \
+-    libcrypto_static \
+-    libcrypto_utils \
+-    libcutils \
+-    libutils
+-
+-
+-# Each library in TARGET_RECOVERY_UPDATER_LIBS should have a function
+-# named "Register_<libname>()".  Here we emit a little C function that
+-# gets #included by updater.cpp.  It calls all those registration
+-# functions.
+-# $(1): the path to the register.inc file
+-# $(2): a list of TARGET_RECOVERY_UPDATER_LIBS
+-define generate-register-inc
+-    $(hide) mkdir -p $(dir $(1))
+-    $(hide) echo "" > $(1)
+-    $(hide) $(foreach lib,$(2),echo "extern void Register_$(lib)(void);" >> $(1);)
+-    $(hide) echo "void RegisterDeviceExtensions() {" >> $(1)
+-    $(hide) $(foreach lib,$(2),echo "  Register_$(lib)();" >> $(1);)
+-    $(hide) echo "}" >> $(1)
+-endef
+-
+-
+-# updater (static executable)
+-# ===============================
+-include $(CLEAR_VARS)
+-
+-LOCAL_MODULE := updater
+-LOCAL_LICENSE_KINDS := SPDX-license-identifier-Apache-2.0
+-LOCAL_LICENSE_CONDITIONS := notice
+-LOCAL_NOTICE_FILE := $(LOCAL_PATH)/../NOTICE
+-
+-LOCAL_SRC_FILES := \
+-    updater_main.cpp
+-
+-LOCAL_C_INCLUDES := \
+-    $(LOCAL_PATH)/include
+-
+-LOCAL_CFLAGS := \
+-    -Wall \
+-    -Werror
+-
+-LOCAL_STATIC_LIBRARIES := \
+-    libupdater_device \
+-    libupdater_core \
+-    $(TARGET_RECOVERY_UPDATER_LIBS) \
+-    $(TARGET_RECOVERY_UPDATER_EXTRA_LIBS) \
+-    $(updater_common_static_libraries) \
+-    libfs_mgr \
+-    libtune2fs \
+-    $(tune2fs_static_libraries)
+-
+-LOCAL_HEADER_LIBRARIES := libgtest_prod_headers
+-
+-LOCAL_MODULE_CLASS := EXECUTABLES
+-inc := $(call local-generated-sources-dir)/register.inc
+-
+-# Devices can also add libraries to TARGET_RECOVERY_UPDATER_EXTRA_LIBS.
+-# These libs are also linked in with updater, but we don't try to call
+-# any sort of registration function for these.  Use this variable for
+-# any subsidiary static libraries required for your registered
+-# extension libs.
+-$(inc) : libs := $(TARGET_RECOVERY_UPDATER_LIBS)
+-$(inc) :
+-	$(call generate-register-inc,$@,$(libs))
+-
+-LOCAL_GENERATED_SOURCES := $(inc)
+-
+-inc :=
+-
+-LOCAL_FORCE_STATIC_EXECUTABLE := true
+-
+-include $(BUILD_EXECUTABLE)
+-- 
+2.37.3
+

@@ -1,0 +1,36 @@
+From 738ce26c24ea9a75d897d567f2fb1e5c7a1c4e2d Mon Sep 17 00:00:00 2001
+From: Yuntao Xu <yuntaoxu@google.com>
+Date: Fri, 21 Jan 2022 14:15:36 -0800
+Subject: [PATCH] Add two product variables in Soong
+
+Add the Target_recovery_updater_libs and
+Target_recovery_updater_extra_libs variables to pick uo the value of
+the Make variables TARGET_RECOVERY_UPDATER_LIBS and
+TARGET_RECOVERY_UPDATER_EXTRA_LIBS, respectively, which is then used in
+Soong.
+
+Bug: 205649904
+Bug: 204485376
+Test: TreeHugger
+Change-Id: Ie0c841e6636c4c249cea0eccae2d550fea2a43cf
+---
+ core/soong_config.mk | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/core/soong_config.mk b/core/soong_config.mk
+index d03b68746..f2e421622 100644
+--- a/core/soong_config.mk
++++ b/core/soong_config.mk
+@@ -43,6 +43,9 @@ $(call add_json_list, Unbundled_build_apps,              $(TARGET_BUILD_APPS))
+ $(call add_json_bool, Unbundled_build_image,             $(TARGET_BUILD_UNBUNDLED_IMAGE))
+ $(call add_json_bool, Always_use_prebuilt_sdks,          $(TARGET_BUILD_USE_PREBUILT_SDKS))
+ 
++$(call add_json_list, Target_recovery_updater_libs,      $(TARGET_RECOVERY_UPDATER_LIBS))
++$(call add_json_list, Target_recovery_updater_extra_libs,      $(TARGET_RECOVERY_UPDATER_EXTRA_LIBS))
++
+ $(call add_json_bool, Debuggable,                        $(filter userdebug eng,$(TARGET_BUILD_VARIANT)))
+ $(call add_json_bool, Eng,                               $(filter eng,$(TARGET_BUILD_VARIANT)))
+ 
+-- 
+2.37.3
+

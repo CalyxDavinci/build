@@ -1,0 +1,24 @@
+From 4518d3adaf4bfd9913f8ecafa15836897a836442 Mon Sep 17 00:00:00 2001
+From: Jens Reidel <adrian@travitia.xyz>
+Date: Fri, 30 Sep 2022 16:58:17 +0300
+Subject: [PATCH] Aperture: Override Camera2
+
+---
+ app/Android.bp | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/app/Android.bp b/app/Android.bp
+index 58bedde..5fd6c51 100644
+--- a/app/Android.bp
++++ b/app/Android.bp
+@@ -6,6 +6,7 @@
+ 
+ android_app {
+     name: "Aperture",
++    overrides: ["Camera2"],
+ 
+     srcs: ["src/main/java/**/*.kt"],
+     resource_dirs: ["src/main/res"],
+-- 
+2.37.3
+

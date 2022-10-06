@@ -1,0 +1,41 @@
+From 87a4fb4c43871735bb00c88621283dc525be14f5 Mon Sep 17 00:00:00 2001
+From: Neeraj Soni <neersoni@codeaurora.org>
+Date: Mon, 4 May 2020 23:49:03 +0530
+Subject: [PATCH 2/3] vold: Enable legacy support for wrapped key
+
+Legacy wrapped key support was dropped while merging changes
+to support multiple versions of dm-default key driver in kernel.
+Fix this by calling legacy API to check wrapped key support for
+metadata encryption.
+
+CRs-Fixed: 2678344
+Change-Id: I7d9efec09ddf7169cf0b1114b4e16b9fe38cad4b
+Signed-off-by: Neeraj Soni <neersoni@codeaurora.org>
+---
+ MetadataCrypt.cpp | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/MetadataCrypt.cpp b/MetadataCrypt.cpp
+index 5c9e644..50943fc 100644
+--- a/MetadataCrypt.cpp
++++ b/MetadataCrypt.cpp
+@@ -36,6 +36,7 @@
+ #include "Checkpoint.h"
+ #include "CryptoType.h"
+ #include "EncryptInplace.h"
++#include "FsCrypt.h"
+ #include "KeyStorage.h"
+ #include "KeyUtil.h"
+ #include "Keystore.h"
+@@ -267,6 +268,8 @@ bool fscrypt_mount_metadata_encrypted(const std::string& blk_device, const std::
+         }
+         options.cipher = legacy_aes_256_xts;
+         options.use_legacy_options_format = true;
++        if (is_metadata_wrapped_key_supported())
++            options.use_hw_wrapped_key = true;
+         options.set_dun = android::base::GetBoolProperty("ro.crypto.set_dun", false);
+         if (!options.set_dun && data_rec->fs_mgr_flags.checkpoint_blk) {
+             LOG(ERROR)
+-- 
+2.37.3
+

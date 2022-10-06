@@ -1,0 +1,26 @@
+From 9d5822a373f6fb99c42eb7745a194782556ea46a Mon Sep 17 00:00:00 2001
+From: Jens Reidel <adrian@travitia.xyz>
+Date: Mon, 26 Sep 2022 23:18:55 +0300
+Subject: [PATCH] build: Update Rust to 1.64
+
+Change-Id: I4604533b6661c8d9fa3058f17427dc6f6da07083
+---
+ rust/config/global.go | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/rust/config/global.go b/rust/config/global.go
+index 2d5fa991b..0da4a339f 100644
+--- a/rust/config/global.go
++++ b/rust/config/global.go
+@@ -24,7 +24,7 @@ import (
+ var pctx = android.NewPackageContext("android/soong/rust/config")
+ 
+ var (
+-	RustDefaultVersion = "1.59.0"
++	RustDefaultVersion = "1.64.0"
+ 	RustDefaultBase    = "prebuilts/rust/"
+ 	DefaultEdition     = "2021"
+ 	Stdlibs            = []string{
+-- 
+2.37.3
+

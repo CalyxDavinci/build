@@ -1,4 +1,4 @@
-FROM registry.fedoraproject.org/fedora-minimal:rawhide
+FROM registry.fedoraproject.org/fedora-minimal:36
 
 RUN microdnf install -y \
              git \
@@ -32,7 +32,8 @@ RUN microdnf install -y \
              freetype-devel \
              rsync \
              xz \
-             tar
+             tar \
+             ncurses-compat-libs
 
 RUN curl http://commondatastorage.googleapis.com/git-repo-downloads/repo > /usr/bin/repo && chmod +x /usr/bin/repo
 

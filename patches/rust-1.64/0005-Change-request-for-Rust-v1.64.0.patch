@@ -1,0 +1,32 @@
+From 266e33674f066176ce186dbe2ff6d2b560074f01 Mon Sep 17 00:00:00 2001
+From: Charisee <chiw@google.com>
+Date: Thu, 15 Sep 2022 01:07:46 +0000
+Subject: [PATCH] Change request for Rust v1.64.0
+
+note from clippy: https://rust-lang.github.io/rust-clippy/master/index.html#manual_retain
+
+Please check change for correctness.
+
+bug: 243420629
+Test: test_compiler.py
+Change-Id: If64daae01c3bf6d83b80f624c1f5603fae171a2d
+---
+ keystore2/legacykeystore/lib.rs | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/keystore2/legacykeystore/lib.rs b/keystore2/legacykeystore/lib.rs
+index 95f917ae..ed5bd4fe 100644
+--- a/keystore2/legacykeystore/lib.rs
++++ b/keystore2/legacykeystore/lib.rs
+@@ -393,7 +393,7 @@ impl LegacyKeystore {
+         let uid = Self::get_effective_uid(uid).context("In list.")?;
+         let mut result = self.list_legacy(uid).context("In list.")?;
+         result.append(&mut db.list(uid).context("In list: Trying to get list of entries.")?);
+-        result = result.into_iter().filter(|s| s.starts_with(prefix)).collect();
++        result.retain(|s| s.starts_with(prefix));
+         result.sort_unstable();
+         result.dedup();
+         Ok(result)
+-- 
+2.37.3
+

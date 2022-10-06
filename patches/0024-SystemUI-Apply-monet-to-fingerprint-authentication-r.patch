@@ -1,0 +1,35 @@
+From d27138a1624ae996bc187a91eab7154a9adac18c Mon Sep 17 00:00:00 2001
+From: SagarMakhar <sagarmakhar@gmail.com>
+Date: Fri, 31 Dec 2021 23:53:48 +0530
+Subject: [PATCH 6/6] SystemUI: Apply monet to fingerprint authentication
+ ripple animation
+
+Change-Id: I15d0f9fee13647062c651219b527e01a539b6909
+---
+ .../src/com/android/systemui/biometrics/AuthRippleView.kt      | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/packages/SystemUI/src/com/android/systemui/biometrics/AuthRippleView.kt b/packages/SystemUI/src/com/android/systemui/biometrics/AuthRippleView.kt
+index 378ae14f0327..4e0f8dd51936 100644
+--- a/packages/SystemUI/src/com/android/systemui/biometrics/AuthRippleView.kt
++++ b/packages/SystemUI/src/com/android/systemui/biometrics/AuthRippleView.kt
+@@ -28,6 +28,7 @@ import android.util.AttributeSet
+ import android.view.View
+ import android.view.animation.PathInterpolator
+ import com.android.internal.graphics.ColorUtils
++import com.android.settingslib.Utils
+ import com.android.systemui.animation.Interpolators
+ import com.android.systemui.statusbar.charging.DwellRippleShader
+ import com.android.systemui.statusbar.charging.RippleShader
+@@ -86,7 +87,7 @@ class AuthRippleView(context: Context?, attrs: AttributeSet?) : View(context, at
+         }
+ 
+     init {
+-        rippleShader.color = 0xffffffff.toInt() // default color
++        rippleShader.color = Utils.getColorAttr(context, android.R.attr.colorAccent).defaultColor
+         rippleShader.progress = 0f
+         rippleShader.sparkleStrength = RIPPLE_SPARKLE_STRENGTH
+         ripplePaint.shader = rippleShader
+-- 
+2.37.3
+

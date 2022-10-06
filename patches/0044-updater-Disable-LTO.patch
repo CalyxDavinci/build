@@ -1,0 +1,31 @@
+From 52431f9bbe0048469894e3e1b2e5e3528dbd11eb Mon Sep 17 00:00:00 2001
+From: Jens Reidel <adrian@travitia.xyz>
+Date: Tue, 27 Sep 2022 02:21:44 +0300
+Subject: [PATCH] updater: Disable LTO
+
+With GLOBAL_THINLTO enabled, updater will segfault. Disable any
+kind of LTO to circumvent this, we don't care about performance here.
+
+Change-Id: I59fa7087d40bfdb5f9c1c628026d8a41b9ac1a40
+---
+ updater/Android.bp | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/updater/Android.bp b/updater/Android.bp
+index dd05d71a..2ae97034 100644
+--- a/updater/Android.bp
++++ b/updater/Android.bp
+@@ -268,6 +268,10 @@ cc_binary {
+        "register.inc",
+     ],
+     static_executable: true,
++
++    lto: {
++        never: true,
++    },
+ }
+ 
+ cc_defaults {
+-- 
+2.37.3
+

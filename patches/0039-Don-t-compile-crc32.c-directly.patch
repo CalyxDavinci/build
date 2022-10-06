@@ -1,0 +1,26 @@
+From 0d315dd1310d7a5e3010caa48489b386df902168 Mon Sep 17 00:00:00 2001
+From: tarsin <yuanqingxiang233@163.com>
+Date: Fri, 9 Sep 2022 13:51:59 +0800
+Subject: [PATCH] Don't compile crc32.c directly
+
+This file should be included in other source, and its name will changed, compile it directly would trigger a duplicated function decleration with zlib's crc32
+
+Change-Id: I6d4d21cf2689ac68292639347ab0a63a4706f4e6
+---
+ lib/Android.bp | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/lib/Android.bp b/lib/Android.bp
+index 9016e299..368c5712 100644
+--- a/lib/Android.bp
++++ b/lib/Android.bp
+@@ -10,5 +10,6 @@ cc_library_host_static {
+         "color.c", // uses argp
+         "dynamicsizehash*.c",
+         "printversion.c", // uses argp
++        "crc32.c",
+     ],
+ }
+-- 
+2.37.3
+

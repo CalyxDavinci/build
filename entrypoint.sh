@@ -16,7 +16,8 @@ set -e
 BUILDER_USER="calyx-davinci"
 BUILDER_EMAIL="not@existing.org"
 CACHE_SIZE="100GB"
-BUILD_TYPE="user"
+DEVICE=${DEVICE:="davinci"}
+BUILD_TYPE=${BUILD_TYPE:="user"}
 THREAD_COUNT=$(nproc --all)
 
 echo "[i] Setting up ccache..."
@@ -26,6 +27,7 @@ export CCACHE_EXEC=$(which ccache)
 mkdir -p /build/ccache
 export CCACHE_DIR="/build/ccache"
 ccache -M $CACHE_SIZE
+export GLOBAL_THINLTO=1
 
 export HOME=/build
 
@@ -35,10 +37,10 @@ echo "[i] Setting build environment..."
 
 source build/envsetup.sh
 
-lunch calyx_davinci-$BUILD_TYPE
+lunch calyx_$DEVICE-$BUILD_TYPE
 
 echo "[i] Regenerating ABI reference dumps for O3 build..."
-development/vndk/tools/header-checker/utils/create_reference_dumps.py -products calyx_davinci --build-variant $BUILD_TYPE
+development/vndk/tools/header-checker/utils/create_reference_dumps.py -products calyx_$DEVICE --build-variant $BUILD_TYPE
 
 echo "[i] Starting build process..."
 

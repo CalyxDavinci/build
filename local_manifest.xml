@@ -1,40 +1,66 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <manifest>
-   <!-- Remotes -->
-   <remote name="calyxd-github" fetch="https://github.com/" />
-   <remote name="calyxd-gitlab" fetch="https://gitlab.com/" />
-   <remote name="aosp"
-           fetch="https://android.googlesource.com/"
-           review="https://android-review.googlesource.com/" />
+  <!-- Remotes -->
+  <remote name="calyxd-github" fetch="https://github.com/" />
+  <remote name="calyxd-gitlab" fetch="https://gitlab.com/" />
+  <remote name="aosp" fetch="https://android.googlesource.com/" review="https://android-review.googlesource.com/" />
+  <remote fetch="https://git.codelinaro.org/clo/la" name="clo" review="codelinaro.org"/>
 
-   <!-- Remove existing repositories -->
-   <remove-project name="platform/external/zlib" />
-   <remove-project name="platform/system/memory/lmkd" />
-   <remove-project name="CalyxOS/platform_prebuilts_calyx_chromium_arm64" />
-   <remove-project name="CalyxOS/platform_external_calyx_chromium" />
-   <remove-project name="platform/external/chromium-trace" />
-   <remove-project name="platform/external/chromium-webview" />
-   <remove-project name="platform/external/erofs-utils" />
+  <!-- Remove existing repositories -->
+  <remove-project name="platform/external/zlib" />
+  <remove-project name="platform/system/memory/lmkd" />
+  <remove-project name="CalyxOS/platform_hardware_qcom-caf_common" />
+  <remove-project name="platform/external/libpng" />
+  <remove-project name="platform/external/libjpeg-turbo" />
+  <remove-project name="platform/external/lz4" />
+  <remove-project name="platform/external/f2fs-tools" />
+  <remove-project name="platform/packages/apps/Browser2" />
+  <remove-project name="platform/packages/apps/QuickSearchBox" />
+  <remove-project name="CalyxOS/platform_prebuilts_calyx_chromium_x64" />
+  <remove-project name="CalyxOS/platform_prebuilts_calyx_chromium_x86" />
+  <remove-project name="platform/external/erofs-utils" />
 
-   <!-- Rust is outdated, add much more recent one -->
-   <remove-project name="platform/prebuilts/rust" />
+  <!-- Rust is outdated, add much more recent one -->
+  <remove-project name="platform/prebuilts/rust" />
 
-   <!-- Add new repositories -->
-   <project path="device/xiaomi/davinci" name="CalyxDavinci/device_xiaomi_davinci" remote="calyxd-github" revision="12" />
-   <project path="kernel/xiaomi/sm6150" name="CalyxDavinci/kernel_xiaomi_sm6150" remote="calyxd-github" revision="12.1" />
-   <project path="device/xiaomi/sm6150-common" name="CalyxDavinci/android_device_xiaomi_sm6150-common" remote="calyxd-github" revision="12" />
-   <project path="vendor/xiaomi" name="CalyxDavinci/android_vendor_xiaomi" remote="calyxd-github" revision="12" />
-   <project path="hardware/xiaomi" name="CalyxDavinci/android_hardware_xiaomi" remote="calyxd-github" revision="lineage-19.1" />
+  <!-- Add new repositories -->
+  <project path="hardware/qcom-caf/common" name="CalyxOS/platform_hardware_qcom-caf_common" remote="gitlab">
+    <!-- add guard for AOSP hardware/qcom dir -->
+    <linkfile src="os_pickup_aosp.mk" dest="hardware/qcom/Android.mk" />
+    <!-- add guards for CAF repositories -->
+    <linkfile src="os_pickup_qssi.bp" dest="hardware/qcom-caf/sm8150/Android.bp" />
+    <linkfile src="os_pickup.mk" dest="hardware/qcom-caf/sm8150/Android.mk" />
+    <linkfile src="os_pickup_qssi.bp" dest="hardware/qcom-caf/sm8250/Android.bp" />
+    <linkfile src="os_pickup.mk" dest="hardware/qcom-caf/sm8250/Android.mk" />
+    <linkfile src="os_pickup_qssi.bp" dest="hardware/qcom-caf/sm8350/Android.bp" />
+    <linkfile src="os_pickup.mk" dest="hardware/qcom-caf/sm8350/Android.mk" />
+  </project>
 
-   <project path="external/erofs-utils" name="platform/external/erofs-utils" remote="aosp" revision="master" />
-   <project path="external/zlib-ng" name="CalyxDavinci/android_external_zlib-ng" remote="calyxd-github" revision="sc-qpr3" />
-   <project path="system/memory/lmkd" name="YAAP/system_memory_lmkd" remote="calyxd-github" revision="twelve" />
+  <!-- davinci stuff -->
+  <project path="device/xiaomi/davinci" name="CalyxDavinci/device_xiaomi_davinci" remote="calyxd-github" revision="13" />
+  <project path="kernel/xiaomi/sm6150" name="CalyxDavinci/kernel_xiaomi_sm6150" remote="calyxd-github" revision="13" />
+  <project path="device/xiaomi/sm6150-common" name="CalyxDavinci/android_device_xiaomi_sm6150-common" remote="calyxd-github" revision="13" />
+  <project path="vendor/xiaomi" name="CalyxDavinci/android_vendor_xiaomi" remote="calyxd-github" revision="13" />
+  <project path="hardware/xiaomi" name="LineageOS/android_hardware_xiaomi" remote="calyxd-github" revision="lineage-20" />
+  <project path="hardware/qcom-caf/sm8150/audio" name="LineageOS/android_hardware_qcom_audio" remote="calyxd-github" revision="lineage-20.0-caf-sm8150" />
+  <project path="hardware/qcom-caf/sm8150/display" name="LineageOS/android_hardware_qcom_display" remote="calyxd-github" revision="lineage-20.0-caf-sm8150" />
+  <!-- <project path="hardware/qcom-caf/sm8150/display" name="LineageOS/android_hardware_qcom_sm8150_display" remote="calyxd-github" revision="lineage-20.0" /> -->
+  <project path="hardware/qcom-caf/sm8150/media" name="LineageOS/android_hardware_qcom_media" remote="calyxd-github" revision="lineage-20.0-caf-sm8150" />
 
-   <project path="external/bromite-webview" name="CalyxDavinci/platform_external_bromite-webview" remote="calyxd-gitlab" revision="12.1" />
+  <project path="external/zlib-ng" name="CalyxDavinci/android_external_zlib-ng" remote="calyxd-github" revision="13" />
+  <project path="system/memory/lmkd" name="YAAP/system_memory_lmkd" remote="calyxd-github" revision="twelve" />
+  <project path="external/mimalloc" name="CalyxDavinci/android_external_mimalloc" remote="calyxd-github" revision="13" />
+  <project path="external/lz4" name="CalyxDavinci/android_external_lz4" remote="calyxd-github" revision="13" />
+  <project path="external/libpng" name="CalyxDavinci/android_external_libpng" remote="calyxd-github" revision="13" />
+  <project path="external/libjpeg-turbo" name="CalyxDavinci/android_external_libjpeg-turbo" remote="calyxd-github" revision="13" />
+  <project path="external/f2fs-tools" name="CalyxDavinci/android_external_f2fs-tools" remote="calyxd-github" revision="13" />
+  <project path="external/erofs-utils" name="CalyxDavinci/android_external_erofs-utils" remote="calyxd-github" revision="13" />
 
-   <!-- More recent Rust -->
-   <project path="prebuilts/rust" name="platform/prebuilts/rust" remote="aosp" clone-depth="1" revision="master" />
+  <project path="device/qcom/sepolicy_vndr" name="CalyxOS/device_qcom_sepolicy_vndr" remote="calyxd-gitlab" revision="android12L" />
 
-   <!-- Better default Camera app -->
-   <project path="external/Selfie" name="CalyxDavinci/platform_external_Selfie" remote="calyxd-github" revision="main" />
+  <!-- More recent Rust -->
+  <project path="prebuilts/rust" name="platform/prebuilts/rust" remote="aosp" clone-depth="1" revision="refs/tags/rustc-1.64.0" />
+
+  <!-- Better default Camera app -->
+  <project path="packages/apps/Aperture" name="SebaUbuntu/android_packages_apps_Aperture" remote="calyxd-github" revision="lineage-20.0" />
 </manifest>

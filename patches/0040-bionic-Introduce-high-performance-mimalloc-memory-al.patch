@@ -1,0 +1,219 @@
+From 5cb234d6109e97635b9716ee58a95230777be386 Mon Sep 17 00:00:00 2001
+From: Danny Lin <danny@kdrag0n.dev>
+Date: Tue, 9 Mar 2021 14:35:33 -0800
+Subject: [PATCH 1/3] bionic: Introduce high performance mimalloc memory
+ allocator
+
+mimalloc [1] is a general-purpose memory allocator (similar to jemalloc)
+with better performance and lower memory usage than both jemalloc and
+Scudo.
+
+TODO: benchmarks
+
+[1] https://github.com/microsoft/mimalloc
+
+Change-Id: I66c54fda9c10ae26a5a17f93aa8bbc1e7e0e588d
+---
+ libc/Android.bp                  | 32 +++++++++++++++++
+ libc/bionic/malloc_common.h      |  5 +++
+ libc/bionic/mimalloc_wrapper.cpp | 59 ++++++++++++++++++++++++++++++++
+ libc/bionic/mimalloc_wrapper.h   | 48 ++++++++++++++++++++++++++
+ 4 files changed, 144 insertions(+)
+ create mode 100644 libc/bionic/mimalloc_wrapper.cpp
+ create mode 100644 libc/bionic/mimalloc_wrapper.h
+
+diff --git a/libc/Android.bp b/libc/Android.bp
+index 97146aa6f..8151ada3e 100644
+--- a/libc/Android.bp
++++ b/libc/Android.bp
+@@ -147,6 +147,20 @@ libc_scudo_product_variables = {
+     },
+ }
+ 
++libc_mimalloc_product_variables = {
++    malloc_not_svelte: {
++        cflags: ["-DUSE_MIMALLOC"],
++        whole_static_libs: [
++            "libmimalloc",
++            "libc_mimalloc_wrapper",
++        ],
++        exclude_static_libs: [
++            "libjemalloc5",
++            "libc_jemalloc_wrapper",
++        ],
++    },
++}
++
+ // Defaults for native allocator libs/includes to make it
+ // easier to change.
+ // To disable scudo for the non-svelte config remove the line:
+@@ -177,6 +191,23 @@ cc_library_static {
+     static_libs: ["libjemalloc5"],
+ }
+ 
++// Functions not implemented by mimalloc directly, or that need to
++// be modified for Android.
++cc_library_static {
++    name: "libc_mimalloc_wrapper",
++    defaults: ["libc_defaults"],
++    srcs: ["bionic/mimalloc_wrapper.cpp"],
++    cflags: ["-fvisibility=hidden"],
++
++    // Used to pull in the mimalloc include directory so that if the
++    // library is removed, the include directory is also removed.
++    static_libs: ["libmimalloc"],
++
++    apex_available: [
++        "com.android.runtime",
++    ],
++}
++
+ // ========================================================
+ // libc_bootstrap.a - -fno-stack-protector and -ffreestanding
+ // ========================================================
+@@ -1958,6 +1989,7 @@ cc_library_headers {
+         "//external/arm-optimized-routines",
+         "//external/gwp_asan",
+         "//external/jemalloc_new",
++        "//external/mimalloc",
+         "//external/libunwind_llvm",
+         "//external/scudo",
+         "//system/core/property_service/libpropertyinfoparser",
+diff --git a/libc/bionic/malloc_common.h b/libc/bionic/malloc_common.h
+index 4afcc4a8d..4493f3342 100644
+--- a/libc/bionic/malloc_common.h
++++ b/libc/bionic/malloc_common.h
+@@ -65,6 +65,11 @@ __END_DECLS
+ #include "scudo.h"
+ #define Malloc(function)  scudo_svelte_ ## function
+ 
++#elif defined(USE_MIMALLOC)
++
++#include "mimalloc_wrapper.h"
++#define Malloc(function)  mi_ ## function
++
+ #else
+ 
+ #include "jemalloc.h"
+diff --git a/libc/bionic/mimalloc_wrapper.cpp b/libc/bionic/mimalloc_wrapper.cpp
+new file mode 100644
+index 000000000..8360f09c6
+--- /dev/null
++++ b/libc/bionic/mimalloc_wrapper.cpp
+@@ -0,0 +1,59 @@
++/*
++ * Copyright (C) 2021 The ProtonAOSP Project
++ * All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions
++ * are met:
++ *  * Redistributions of source code must retain the above copyright
++ *    notice, this list of conditions and the following disclaimer.
++ *  * Redistributions in binary form must reproduce the above copyright
++ *    notice, this list of conditions and the following disclaimer in
++ *    the documentation and/or other materials provided with the
++ *    distribution.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
++ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
++ * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
++ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
++ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
++ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
++ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
++ * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
++ * SUCH DAMAGE.
++ */
++
++#include <errno.h>
++#include <stdio.h>
++
++#include "mimalloc_wrapper.h"
++
++// Changing decay rate is not supported for now
++int mi_mallopt(int /*param*/, int /*value*/) {
++  return 0;
++}
++
++// Info dumps are not supported
++int mi_malloc_info(int /*options*/, FILE* /*fp*/) {
++  errno = ENOTSUP;
++  return -1;
++}
++
++struct mallinfo mi_mallinfo() {
++  struct mallinfo info {};
++  return info;
++}
++
++// libmemunreachable is not supported
++void mi_malloc_disable() {
++}
++
++void mi_malloc_enable() {
++}
++
++int mi_malloc_iterate(uintptr_t, size_t, void (*)(uintptr_t, size_t, void*), void*) {
++  return 0;
++}
+diff --git a/libc/bionic/mimalloc_wrapper.h b/libc/bionic/mimalloc_wrapper.h
+new file mode 100644
+index 000000000..556e5f642
+--- /dev/null
++++ b/libc/bionic/mimalloc_wrapper.h
+@@ -0,0 +1,48 @@
++/*
++ * Copyright (C) 2021 The ProtonAOSP Project
++ * All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions
++ * are met:
++ *  * Redistributions of source code must retain the above copyright
++ *    notice, this list of conditions and the following disclaimer.
++ *  * Redistributions in binary form must reproduce the above copyright
++ *    notice, this list of conditions and the following disclaimer in
++ *    the documentation and/or other materials provided with the
++ *    distribution.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
++ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
++ * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
++ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
++ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
++ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
++ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
++ * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
++ * SUCH DAMAGE.
++ */
++
++#pragma once
++
++#include <stdint.h>
++#include <stdio.h>
++#include <malloc.h>
++#include <mimalloc.h>
++
++#include <private/bionic_config.h>
++
++__BEGIN_DECLS
++
++int mi_mallopt(int, int);
++int mi_malloc_info(int, FILE*);
++struct mallinfo mi_mallinfo();
++
++void mi_malloc_disable();
++void mi_malloc_enable();
++int mi_malloc_iterate(uintptr_t, size_t, void (*)(uintptr_t, size_t, void*), void*);
++
++__END_DECLS
+-- 
+2.37.3
+

@@ -1,0 +1,27 @@
+From 14330da88438a8ca2690cc096a89ef7d4cfe0385 Mon Sep 17 00:00:00 2001
+From: Jens Reidel <adrian@travitia.xyz>
+Date: Sun, 24 Apr 2022 23:11:24 +0300
+Subject: [PATCH] soong: clang builds with O3
+
+Change-Id: Ia73cf825136b45539ec7fbba1c1bd342969afe51
+---
+ cc/config/global.go | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/cc/config/global.go b/cc/config/global.go
+index 3caf32792..185afd549 100644
+--- a/cc/config/global.go
++++ b/cc/config/global.go
+@@ -113,6 +113,9 @@ var (
+ 
+ 		// Turn off FMA which got enabled by default in clang-r445002 (http://b/218805949)
+ 		"-ffp-contract=off",
++
++		// Experimental O3 build system wide
++		"-O3",
+ 	}
+ 
+ 	commonGlobalConlyflags = []string{}
+-- 
+2.37.3
+
