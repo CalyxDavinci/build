@@ -1,0 +1,47 @@
+From b3634217604929b9ec4daa3632bb46ca1358ac2a Mon Sep 17 00:00:00 2001
+From: Yi Kong <yikong@google.com>
+Date: Wed, 13 Jul 2022 14:50:33 +0800
+Subject: [PATCH 02/11] Add extra cflags for LLVM_NEXT
+
+The staging compiler update sometimes needs additional cflags to build, but those flags may not be recognised by the current compiler. Add a
+new `llvmNextExtraCommonGlobalCflags` section and only append those
+flags when LLVM_NEXT is set.
+
+Test: LLVM_NEXT=true m
+Bug: 236798112
+Change-Id: Icc4687950acd44798b2cf09131a425ddfd919214
+---
+ cc/config/global.go | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/cc/config/global.go b/cc/config/global.go
+index 338b2ad4c..79f2a5a6c 100644
+--- a/cc/config/global.go
++++ b/cc/config/global.go
+@@ -278,6 +278,11 @@ var (
+ 		"-Wno-string-concatenation",
+ 	}
+ 
++	llvmNextExtraCommonGlobalCflags = []string{
++		"-Wno-unqualified-std-cast-call",
++		"-Wno-deprecated-non-prototype",
++	}
++
+ 	IllegalFlags = []string{
+ 		"-w",
+ 	}
+@@ -358,6 +363,11 @@ func init() {
+ 		if ctx.Config().IsEnvTrue("USE_CCACHE") {
+ 			flags = append(flags, "-Wno-unused-command-line-argument")
+ 		}
++
++		if ctx.Config().IsEnvTrue("LLVM_NEXT") {
++			flags = append(flags, llvmNextExtraCommonGlobalCflags...)
++		}
++
+ 		return strings.Join(flags, " ")
+ 	})
+ 
+-- 
+2.38.1
+

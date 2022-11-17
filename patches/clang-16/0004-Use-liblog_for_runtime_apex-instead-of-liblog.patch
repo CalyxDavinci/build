@@ -1,0 +1,55 @@
+From a527254d6699222984f4918492c284f2ff5efbd9 Mon Sep 17 00:00:00 2001
+From: Jiyong Park <jiyong@google.com>
+Date: Fri, 19 Aug 2022 13:09:18 +0900
+Subject: [PATCH 4/4] Use liblog_for_runtime_apex instead of liblog
+
+liblog_for_runtime_apex is a static variant of liblog which is
+explicitly marked as available to the runtime APEX. Any static
+dependency to liblog from inside the runtime APEX is changed from liblog
+to liblog_for_runtime_apex.
+
+Previously, to support the need for using liblog inside the runtime
+APEX, the entire (i.e. both static and shared variants) liblog module
+was marked as available to the runtime APEX, although in reality only
+the static variant of the library was needed there. This was not only
+looking dirty, but also has caused a problem like b/241259844.
+
+To fix this, liblog is separated into two parts. (1) liblog and (2)
+liblog_for_runtime_apex. (1) no longer is available to the runtime APEX
+and is intended to be depended on in most cases: either from the
+non-updatable platform, or from other APEXes. (2) is a static library
+which is explicitly marked as available to the runtime APEX and also
+visible to certain modules that are included in the runtime APEX.
+
+Bug: 241259844
+Test: m and check that liblog depends on stub library of libc
+Change-Id: Ib21f6e64da0c7592341b97b95ca8485d7c29ac4d
+---
+ linker/Android.bp | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/linker/Android.bp b/linker/Android.bp
+index d5e7367f4..277e7c7aa 100644
+--- a/linker/Android.bp
++++ b/linker/Android.bp
+@@ -115,7 +115,7 @@ cc_defaults {
+ 
+         "libasync_safe",
+ 
+-        "liblog",
++        "liblog_for_runtime_apex",
+     ],
+ 
+     // We need to access Bionic private headers in the linker.
+@@ -494,7 +494,7 @@ cc_test {
+     static_libs: [
+         "libasync_safe",
+         "libbase",
+-        "liblog",
++        "liblog_for_runtime_apex",
+     ],
+ 
+     arch: {
+-- 
+2.38.1
+

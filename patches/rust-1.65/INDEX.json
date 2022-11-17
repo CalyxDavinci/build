@@ -1,0 +1,25 @@
+{
+    "build/soong": [
+        "0001-build-Update-Rust-to-1.65.patch"
+    ],
+    "packages/modules/DnsResolver": [
+        "0002-Update-source-for-Rust-1.63.0.patch"
+    ],
+    "system/security": [
+        "0003-Update-for-Rust-v1.62.0.patch",
+        "0004-Update-source-for-Rust-1.63.0.patch",
+        "0005-Change-request-for-Rust-v1.64.0.patch",
+        "0006-keystore2-Update-source-for-Rust-1.65.0.patch"
+    ],
+    "external/uwb": [
+        "0007-Update-source-for-Rust-1.63.0.patch",
+        "0008-uwb-Update-source-for-Rust-1.65.0.patch"
+    ],
+    "packages/modules/Bluetooth": [
+        "0009-Update-source-for-Rust-1.63.0.patch",
+        "0010-Change-request-for-Rust-v1.64.0.patch"
+    ],
+    "frameworks/native": [
+        "0011-Change-request-for-Rust-v1.64.0.patch"
+    ]
+}

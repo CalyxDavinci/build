@@ -1,0 +1,41 @@
+From 3ae713e5210e7d905699368645b5e8602289d26d Mon Sep 17 00:00:00 2001
+From: Yi Kong <yikong@google.com>
+Date: Wed, 22 Jun 2022 16:31:39 +0800
+Subject: [PATCH 1/4] Rewrite function definitions with identifier lists
+
+This syntax is removed in C2x proposal N2432.
+
+Test: presubmit
+Change-Id: Ic1309841423143e48513dd8b67166b4fde2d67fb
+---
+ libc/dns/resolv/res_send.c | 7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
+
+diff --git a/libc/dns/resolv/res_send.c b/libc/dns/resolv/res_send.c
+index fa81e6dc5..a95997d59 100644
+--- a/libc/dns/resolv/res_send.c
++++ b/libc/dns/resolv/res_send.c
+@@ -680,8 +680,7 @@ res_nsend(res_state statp,
+ /* Private */
+ 
+ static int
+-get_salen(sa)
+-	const struct sockaddr *sa;
++get_salen(const struct sockaddr *sa)
+ {
+ 
+ #ifdef HAVE_SA_LEN
+@@ -702,9 +701,7 @@ get_salen(sa)
+  * pick appropriate nsaddr_list for use.  see res_init() for initialization.
+  */
+ static struct sockaddr *
+-get_nsaddr(statp, n)
+-	res_state statp;
+-	size_t n;
++get_nsaddr(res_state statp, size_t n)
+ {
+ 
+ 	if (!statp->nsaddr_list[n].sin_family && EXT(statp).ext) {
+-- 
+2.38.1
+

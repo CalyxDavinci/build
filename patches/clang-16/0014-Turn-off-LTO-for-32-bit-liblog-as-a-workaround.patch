@@ -1,0 +1,43 @@
+From 7a761661974cac6f88bd21f42417b5872e83b237 Mon Sep 17 00:00:00 2001
+From: Yi Kong <yikong@google.com>
+Date: Thu, 4 Aug 2022 14:31:23 +0800
+Subject: [PATCH 1/2] Turn off LTO for 32 bit liblog as a workaround
+
+With global ThinLTO, building anything that depends on arm32 or x86
+liblog fails with the following error:
+
+ld.lld: error: out/soong/.intermediates/system/logging/liblog/liblog/android_arm_armv8-a_shared/liblog.so: undefined reference to __aeabi_uldivmod@LIBC_PRIVATE [--no-allow-shlib-undefined]
+
+Test: GLOBAL_THINLTO=true m
+Bug: 241259844
+Change-Id: I6eb81fa49f3f575820f148b44dee77a03d7fa521
+---
+ liblog/Android.bp | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/liblog/Android.bp b/liblog/Android.bp
+index 4dd6dd35..e72b412d 100644
+--- a/liblog/Android.bp
++++ b/liblog/Android.bp
+@@ -110,6 +110,18 @@ cc_library {
+             // TODO: This is to work around b/24465209. Remove after root cause is fixed
+             pack_relocations: false,
+             ldflags: ["-Wl,--hash-style=both"],
++            // FIXME: Workaround LTO build breakage
++            // http://b/241259844
++            lto: {
++                never: true,
++            },
++        },
++        android_x86: {
++            // FIXME: Workaround LTO build breakage
++            // http://b/241259844
++            lto: {
++                never: true,
++            },
+         },
+         windows: {
+             enabled: true,
+-- 
+2.38.1
+

@@ -1,0 +1,26 @@
+From ee313e138d234f6834d26609870a56fba9507f9b Mon Sep 17 00:00:00 2001
+From: Jens Reidel <adrian@travitia.xyz>
+Date: Thu, 10 Nov 2022 23:22:01 +0200
+Subject: [PATCH] audio: Don't error on new clang-16 warnings
+
+Signed-off-by: Jens Reidel <adrian@travitia.xyz>
+---
+ hal/Android.mk | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/hal/Android.mk b/hal/Android.mk
+index d83ed092..252b70a3 100644
+--- a/hal/Android.mk
++++ b/hal/Android.mk
+@@ -121,7 +121,7 @@ ifeq ($(TARGET_BOARD_AUTO),true)
+   LOCAL_CFLAGS += -DPLATFORM_AUTO
+ endif
+ 
+-LOCAL_CFLAGS += -Wno-macro-redefined
++LOCAL_CFLAGS += -Wno-macro-redefined -Wno-error=enum-conversion -Wno-error=deprecated-non-prototype
+ 
+ LOCAL_HEADER_LIBRARIES := libhardware_headers
+ 
+-- 
+2.38.1
+

@@ -9,7 +9,6 @@
   <!-- Remove existing repositories -->
   <remove-project name="platform/external/zlib" />
   <remove-project name="platform/system/memory/lmkd" />
-  <remove-project name="CalyxOS/platform_hardware_qcom-caf_common" />
   <remove-project name="platform/external/libpng" />
   <remove-project name="platform/external/libjpeg-turbo" />
   <remove-project name="platform/external/lz4" />
@@ -19,22 +18,20 @@
   <remove-project name="CalyxOS/platform_prebuilts_calyx_chromium_x64" />
   <remove-project name="CalyxOS/platform_prebuilts_calyx_chromium_x86" />
   <remove-project name="platform/external/erofs-utils" />
+  <remove-project name="platform/external/rust/crates/bindgen" />
+  <remove-project name="platform/external/rust/crates/clap" />
+  <remove-project name="platform/external/rust/crates/hashbrown" />
+  <remove-project name="platform/external/rust/crates/ahash" />
+  <remove-project name="platform/external/rust/crates/getrandom" />
+  <remove-project name="platform/external/rust/crates/heck" />
+  <remove-project name="platform/external/rust/crates/argh_derive" />
+  <remove-project name="platform/external/rust/crates/structopt-derive" />
+  <remove-project name="platform/external/rust/cxx" />
 
   <!-- Rust is outdated, add much more recent one -->
   <remove-project name="platform/prebuilts/rust" />
-
-  <!-- Add new repositories -->
-  <project path="hardware/qcom-caf/common" name="CalyxOS/platform_hardware_qcom-caf_common" remote="gitlab">
-    <!-- add guard for AOSP hardware/qcom dir -->
-    <linkfile src="os_pickup_aosp.mk" dest="hardware/qcom/Android.mk" />
-    <!-- add guards for CAF repositories -->
-    <linkfile src="os_pickup_qssi.bp" dest="hardware/qcom-caf/sm8150/Android.bp" />
-    <linkfile src="os_pickup.mk" dest="hardware/qcom-caf/sm8150/Android.mk" />
-    <linkfile src="os_pickup_qssi.bp" dest="hardware/qcom-caf/sm8250/Android.bp" />
-    <linkfile src="os_pickup.mk" dest="hardware/qcom-caf/sm8250/Android.mk" />
-    <linkfile src="os_pickup_qssi.bp" dest="hardware/qcom-caf/sm8350/Android.bp" />
-    <linkfile src="os_pickup.mk" dest="hardware/qcom-caf/sm8350/Android.mk" />
-  </project>
+  <!-- Older bingen is incompatible with newer clang -->
+  <remove-project name="platform/prebuilts/clang-tools" />
 
   <!-- davinci stuff -->
   <project path="device/xiaomi/davinci" name="CalyxDavinci/device_xiaomi_davinci" remote="calyxd-github" revision="13" />
@@ -42,10 +39,6 @@
   <project path="device/xiaomi/sm6150-common" name="CalyxDavinci/android_device_xiaomi_sm6150-common" remote="calyxd-github" revision="13" />
   <project path="vendor/xiaomi" name="CalyxDavinci/android_vendor_xiaomi" remote="calyxd-github" revision="13" />
   <project path="hardware/xiaomi" name="LineageOS/android_hardware_xiaomi" remote="calyxd-github" revision="lineage-20" />
-  <project path="hardware/qcom-caf/sm8150/audio" name="LineageOS/android_hardware_qcom_audio" remote="calyxd-github" revision="lineage-20.0-caf-sm8150" />
-  <project path="hardware/qcom-caf/sm8150/display" name="LineageOS/android_hardware_qcom_display" remote="calyxd-github" revision="lineage-20.0-caf-sm8150" />
-  <!-- <project path="hardware/qcom-caf/sm8150/display" name="LineageOS/android_hardware_qcom_sm8150_display" remote="calyxd-github" revision="lineage-20.0" /> -->
-  <project path="hardware/qcom-caf/sm8150/media" name="LineageOS/android_hardware_qcom_media" remote="calyxd-github" revision="lineage-20.0-caf-sm8150" />
 
   <project path="external/zlib-ng" name="CalyxDavinci/android_external_zlib-ng" remote="calyxd-github" revision="13" />
   <project path="system/memory/lmkd" name="YAAP/system_memory_lmkd" remote="calyxd-github" revision="twelve" />
@@ -60,7 +53,23 @@
 
   <!-- More recent Rust -->
   <project path="prebuilts/rust" name="platform/prebuilts/rust" remote="aosp" clone-depth="1" revision="refs/tags/rustc-1.64.0" />
+  <!-- Newer Clang requires more recent clang-tools for bindgen -->
+  <project path="prebuilts/clang-tools" name="platform/prebuilts/clang-tools" remote="aosp" clone-depth="1" revision="master" />
+  <project path="external/rust/crate/bindgen" name="CalyxDavinci/rust-bindgen" remote="calyxd-github" revision="master" />
+  <!-- Newer bindgen requires newer clap -->
+  <project path="external/rust/crates/clap" name="platform/external/rust/crates/clap" remote="aosp" clone-depth="1" revision="master" />
+  <project path="external/rust/crates/clap_derive" name="platform/external/rust/crates/clap_derive" remote="aosp" clone-depth="1" revision="master" />
+  <project path="external/rust/crates/clap_lex" name="platform/external/rust/crates/clap_lex" remote="aosp" clone-depth="1" revision="master" />
+  <project path="external/rust/crates/indexmap" name="platform/external/rust/crates/indexmap" remote="aosp" clone-depth="1" revision="master" />
+  <project path="external/rust/crates/os_str_bytes" name="platform/external/rust/crates/os_str_bytes" remote="aosp" clone-depth="1" revision="master" />
+  <project path="external/rust/crates/hashbrown" name="platform/external/rust/crates/hashbrown" remote="aosp" clone-depth="1" revision="master" />
+  <project path="external/rust/crates/ahash" name="platform/external/rust/crates/ahash" remote="aosp" clone-depth="1" revision="master" />
+  <project path="external/rust/crates/getrandom" name="platform/external/rust/crates/getrandom" remote="aosp" clone-depth="1" revision="master" />
+  <project path="external/rust/crates/heck" name="platform/external/rust/crates/heck" remote="aosp" clone-depth="1" revision="master" />
+  <project path="external/rust/crates/argh_derive" name="platform/external/rust/crates/argh_derive" remote="aosp" clone-depth="1" revision="master" />
+  <project path="external/rust/crates/structopt-derive" name="platform/external/rust/crates/structopt-derive" remote="aosp" clone-depth="1" revision="master" />
+  <project path="external/rust/cxx" name="platform/external/rust/cxx" remote="aosp" clone-depth="1" revision="4457dc4a5e5ab698eeb79672cdd3f8705cb31ac0" />
 
   <!-- Better default Camera app -->
-  <project path="packages/apps/Aperture" name="SebaUbuntu/android_packages_apps_Aperture" remote="calyxd-github" revision="lineage-20.0" />
+  <project path="packages/apps/Aperture" name="LineageOS/android_packages_apps_Aperture" remote="calyxd-github" revision="lineage-20.0" />
 </manifest>

@@ -1,0 +1,40 @@
+From b044be47f717b30ab98d301723b5f0ef75b7da5e Mon Sep 17 00:00:00 2001
+From: Charisee <chiw@google.com>
+Date: Fri, 24 Jun 2022 23:15:30 +0000
+Subject: [PATCH] Update for Rust v1.62.0
+
+Code triggered an error. See https://rust-lang.github.io/rust-clippy/master/index.html#map_identity
+
+Please check for correctness
+
+Test: Ran test_compiler.py
+Bug: 236723597
+Change-Id: I4f4119f4d9fab5baa58b60a1de3c6e8210df1432
+---
+ keystore2/src/globals.rs | 10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
+
+diff --git a/keystore2/src/globals.rs b/keystore2/src/globals.rs
+index 109c9f5..edbe6ce 100644
+--- a/keystore2/src/globals.rs
++++ b/keystore2/src/globals.rs
+@@ -465,12 +465,10 @@ fn connect_remotely_provisioned_component(
+     .context("In connect_remotely_provisioned_component.")?;
+ 
+     let rem_prov_hal: Strong<dyn IRemotelyProvisionedComponent> =
+-        map_binder_status_code(binder::get_interface(&service_name))
+-            .context(concat!(
+-                "In connect_remotely_provisioned_component: Trying to connect to",
+-                " RemotelyProvisionedComponent service."
+-            ))
+-            .map_err(|e| e)?;
++        map_binder_status_code(binder::get_interface(&service_name)).context(concat!(
++            "In connect_remotely_provisioned_component: Trying to connect to",
++            " RemotelyProvisionedComponent service."
++        ))?;
+     Ok(rem_prov_hal)
+ }
+ 
+-- 
+2.37.3
+

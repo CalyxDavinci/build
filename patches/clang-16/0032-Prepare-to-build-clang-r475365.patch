@@ -1,0 +1,35 @@
+From 48bf9c6474f0f939102720e1728230d6f9b9467e Mon Sep 17 00:00:00 2001
+From: Yabin Cui <yabinc@google.com>
+Date: Thu, 27 Oct 2022 10:17:16 -0700
+Subject: [PATCH 09/11] Prepare to build clang-r475365
+
+Allow single-bit-bitfield-constant-conversion warnings to pass
+with r475365.
+
+Bug: 253033919
+Test: run test_compiler.py
+Change-Id: Icc1f1c6c013418f1e5bb839ef70ebe8498b9cedc
+---
+ cc/config/global.go | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/cc/config/global.go b/cc/config/global.go
+index 4f177700b..8b578f071 100644
+--- a/cc/config/global.go
++++ b/cc/config/global.go
+@@ -293,10 +293,8 @@ var (
+ 	}
+ 
+ 	llvmNextExtraCommonGlobalCflags = []string{
+-		// New warnings to be fixed after clang-r468909
+-		"-Wno-error=array-parameter",     // http://b/241941550
+-		"-Wno-error=deprecated-builtins", // http://b/241601211
+-		"-Wno-error=deprecated",          // in external/googletest/googletest
++		// New warnings to be fixed after clang-r475365
++		"-Wno-error=single-bit-bitfield-constant-conversion", // http://b/243965903
+ 	}
+ 
+ 	IllegalFlags = []string{
+-- 
+2.38.1
+

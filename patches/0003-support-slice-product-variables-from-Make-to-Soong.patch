@@ -1,4 +1,4 @@
-From 843fd3e78987def8b30872d310e2ccd1b897428e Mon Sep 17 00:00:00 2001
+From 34803c3f8f1b947be7ffd9c0a5ba1beaa0eb5373 Mon Sep 17 00:00:00 2001
 From: Yuntao Xu <yuntaoxu@google.com>
 Date: Fri, 21 Jan 2022 14:08:48 -0800
 Subject: [PATCH] support slice product variables from Make to Soong
@@ -16,7 +16,7 @@ Change-Id: I4f7596e78a47d8e4815b3ae48ab3dda9237b3bf5
  2 files changed, 217 insertions(+), 6 deletions(-)
 
 diff --git a/android/variable.go b/android/variable.go
-index 373891ae4..4be1c4655 100644
+index 442068423..9884cbe28 100644
 --- a/android/variable.go
 +++ b/android/variable.go
 @@ -58,6 +58,15 @@ type variableProperties struct {
@@ -35,17 +35,17 @@ index 373891ae4..4be1c4655 100644
  		// unbundled_build is a catch-all property to annotate modules that don't build in one or
  		// more unbundled branches, usually due to dependencies missing from the manifest.
  		Unbundled_build struct {
-@@ -443,6 +452,9 @@ type productVariables struct {
- 	SepolicyFreezeTestExtraPrebuiltDirs []string `json:",omitempty"`
- 
+@@ -445,6 +454,9 @@ type productVariables struct {
  	GenerateAidlNdkPlatformBackend bool `json:",omitempty"`
-+
+ 
+ 	ForceMultilibFirstOnDevice bool `json:",omitempty"`
++	
 +	Target_recovery_updater_libs       *[]string `json:",omitempty"`
 +	Target_recovery_updater_extra_libs *[]string `json:",omitempty"`
  }
  
  func boolPtr(v bool) *bool {
-@@ -1087,7 +1099,13 @@ func printfIntoProperties(ctx BottomUpMutatorContext, prefix string,
+@@ -1089,7 +1101,13 @@ func printfIntoProperties(ctx BottomUpMutatorContext, prefix string,
  			}
  		case reflect.Slice:
  			for j := 0; j < propertyValue.Len(); j++ {
@@ -60,7 +60,7 @@ index 373891ae4..4be1c4655 100644
  				if err != nil {
  					printfIntoPropertiesError(ctx, prefix, productVariablePropertyValue, i, err)
  				}
-@@ -1102,18 +1120,78 @@ func printfIntoProperties(ctx BottomUpMutatorContext, prefix string,
+@@ -1104,18 +1122,78 @@ func printfIntoProperties(ctx BottomUpMutatorContext, prefix string,
  	}
  }
  
@@ -144,7 +144,7 @@ index 373891ae4..4be1c4655 100644
  	if strings.Contains(s, "%d") {
  		switch v := variableValue.(type) {
  		case int:
-@@ -1131,6 +1209,7 @@ func printfIntoProperty(propertyValue reflect.Value, variableValue interface{})
+@@ -1133,6 +1211,7 @@ func printfIntoProperty(propertyValue reflect.Value, variableValue interface{})
  		switch variableValue.(type) {
  		case string:
  			// Nothing

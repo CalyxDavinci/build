@@ -1,0 +1,29 @@
+From f4ae5babad51c9e690ecbe0d1210d28c60b8c593 Mon Sep 17 00:00:00 2001
+From: Yi Kong <yikong@google.com>
+Date: Thu, 23 Jun 2022 04:06:19 +0800
+Subject: [PATCH] Rewrite function declarators without prototypes
+
+This syntax is removed in C2x proposal N2841.
+
+Test: presubmit
+Change-Id: Id2e668a859cbd1d5dcee6cfce354d1d7de47e340
+---
+ lib/libstatssocket/statsd_writer.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lib/libstatssocket/statsd_writer.c b/lib/libstatssocket/statsd_writer.c
+index c00c9783..06695fe4 100644
+--- a/lib/libstatssocket/statsd_writer.c
++++ b/lib/libstatssocket/statsd_writer.c
+@@ -76,7 +76,7 @@ static int statsdAvailable();
+ static int statsdOpen();
+ static void statsdClose();
+ static int statsdWrite(struct timespec* ts, struct iovec* vec, size_t nr);
+-static void statsdNoteDrop();
++static void statsdNoteDrop(int error, int tag);
+ static int statsdIsClosed();
+ 
+ struct android_log_transport_write statsdLoggerWrite = {
+-- 
+2.38.1
+

@@ -1,0 +1,63 @@
+From 0a853e347171667ce974915453759315eabc84c2 Mon Sep 17 00:00:00 2001
+From: Jens Reidel <adrian@travitia.xyz>
+Date: Fri, 11 Nov 2022 01:25:08 +0200
+Subject: [PATCH 11/11] build: Use adrian clang 16 instead of AOSP clang 15
+
+Change-Id: Ic6ac84200402a551589c9fb55520c5f154a46075
+Signed-off-by: Jens Reidel <adrian@travitia.xyz>
+---
+ cc/config/global.go | 10 ++++++----
+ rust/bindgen.go     |  2 +-
+ 2 files changed, 7 insertions(+), 5 deletions(-)
+
+diff --git a/cc/config/global.go b/cc/config/global.go
+index 05b56dd16..4fb08b968 100644
+--- a/cc/config/global.go
++++ b/cc/config/global.go
+@@ -245,6 +245,10 @@ var (
+ 		"-Wno-error=array-parameter",     // http://b/241941550
+ 		"-Wno-error=deprecated-builtins", // http://b/241601211
+ 		"-Wno-error=deprecated",          // in external/googletest/googletest
++		// New warnings to be fixed after clang-r475365
++		"-Wno-error=single-bit-bitfield-constant-conversion", // http://b/243965903
++		// New warnings to be fixed after clang-r477473
++		"-Wno-error=thread-safety-analysis", // appears in art
+ 	}
+ 
+ 	noOverrideExternalGlobalCflags = []string{
+@@ -290,8 +294,6 @@ var (
+ 	}
+ 
+ 	llvmNextExtraCommonGlobalCflags = []string{
+-		// New warnings to be fixed after clang-r475365
+-		"-Wno-error=single-bit-bitfield-constant-conversion", // http://b/243965903
+ 	}
+ 
+ 	IllegalFlags = []string{
+@@ -305,8 +307,8 @@ var (
+ 
+ 	// prebuilts/clang default settings.
+ 	ClangDefaultBase         = "prebuilts/clang/host"
+-	ClangDefaultVersion      = "clang-r468909b"
+-	ClangDefaultShortVersion = "15.0.3"
++	ClangDefaultVersion      = "adrian-clang"
++	ClangDefaultShortVersion = "16.0.0"
+ 
+ 	// Directories with warnings from Android.bp files.
+ 	WarningAllowedProjects = []string{
+diff --git a/rust/bindgen.go b/rust/bindgen.go
+index b4626a048..cb60fce92 100644
+--- a/rust/bindgen.go
++++ b/rust/bindgen.go
+@@ -30,7 +30,7 @@ var (
+ 	defaultBindgenFlags = []string{""}
+ 
+ 	// bindgen should specify its own Clang revision so updating Clang isn't potentially blocked on bindgen failures.
+-	bindgenClangVersion = "clang-r450784d"
++	bindgenClangVersion = "adrian-clang"
+ 
+ 	_ = pctx.VariableFunc("bindgenClangVersion", func(ctx android.PackageVarContext) string {
+ 		if override := ctx.Config().Getenv("LLVM_BINDGEN_PREBUILTS_VERSION"); override != "" {
+-- 
+2.38.1
+

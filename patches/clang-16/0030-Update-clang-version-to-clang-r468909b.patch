@@ -1,0 +1,31 @@
+From 283dad411c92ee62985666f2e054b4dbffb83154 Mon Sep 17 00:00:00 2001
+From: Stephen Hines <srhines@google.com>
+Date: Fri, 7 Oct 2022 00:33:59 -0700
+Subject: [PATCH 07/11] Update clang version to clang-r468909b
+
+Bug: http://b/241011085
+Bug: http://b/235405318
+Test: Builds
+Change-Id: Ib415277284fc69f5a6b59b6998f6cdbcaefdd13e
+---
+ cc/config/global.go | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/cc/config/global.go b/cc/config/global.go
+index 340ec21c0..f94ef76c6 100644
+--- a/cc/config/global.go
++++ b/cc/config/global.go
+@@ -309,8 +309,8 @@ var (
+ 
+ 	// prebuilts/clang default settings.
+ 	ClangDefaultBase         = "prebuilts/clang/host"
+-	ClangDefaultVersion      = "clang-r468909"
+-	ClangDefaultShortVersion = "15.0.2"
++	ClangDefaultVersion      = "clang-r468909b"
++	ClangDefaultShortVersion = "15.0.3"
+ 
+ 	// Directories with warnings from Android.bp files.
+ 	WarningAllowedProjects = []string{
+-- 
+2.38.1
+

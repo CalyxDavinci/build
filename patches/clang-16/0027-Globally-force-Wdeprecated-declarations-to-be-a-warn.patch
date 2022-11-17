@@ -1,0 +1,48 @@
+From 98c50e65ed8d78bd1abe991d6374b0e2dad19614 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Krzysztof=20Kosi=C5=84ski?= <krzysio@google.com>
+Date: Sun, 7 Aug 2022 06:56:54 +0000
+Subject: [PATCH 04/11] Globally force -Wdeprecated-declarations to be a
+ warning.
+
+Some code compiles with -Werror, which makes it very hard to mark
+anything as deprecated without breaking the build. This option
+will ensure that we can still mark things as deprecated without
+breaking such code. Among other things, this will allow us to
+undo a local change to protobuf which disables deprecation
+warnings.
+
+Bug: 203713560
+Test: presubmit
+Change-Id: I718de31c3ff685dba4104f3c9e7bd5d169d89f7e
+---
+ cc/config/global.go | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/cc/config/global.go b/cc/config/global.go
+index 916bc207c..5181a83a9 100644
+--- a/cc/config/global.go
++++ b/cc/config/global.go
+@@ -59,6 +59,10 @@ var (
+ 		"-Werror=string-plus-int",
+ 		"-Werror=unreachable-code-loop-increment",
+ 
++		// Force deprecation warnings to be warnings for code that compiles with -Werror.
++		// Making deprecated usages an error causes extreme pain when trying to deprecate anything.
++		"-Wno-error=deprecated-declarations",
++
+ 		"-D__compiler_offsetof=__builtin_offsetof",
+ 
+ 		// Emit address-significance table which allows linker to perform safe ICF. Clang does
+@@ -283,8 +287,7 @@ var (
+ 		"-Wno-deprecated-non-prototype",
+ 	}
+ 
+-	llvmNextExtraCommonGlobalCflags = []string{
+-	}
++	llvmNextExtraCommonGlobalCflags = []string{}
+ 
+ 	IllegalFlags = []string{
+ 		"-w",
+-- 
+2.38.1
+

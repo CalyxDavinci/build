@@ -1,0 +1,43 @@
+From 7e7bf1e676d0962a8bf0cafc64641e7ba2e9c34d Mon Sep 17 00:00:00 2001
+From: Yi Kong <yikong@google.com>
+Date: Wed, 22 Jun 2022 16:57:55 +0800
+Subject: [PATCH 1/2] Rewrite function declarators without prototypes
+
+This syntax is removed in C2x proposal N2841.
+
+Test: presubmit
+Change-Id: I3b067023327ed22dffda698c5f1accde60d95839
+---
+ libnetutils/dhcpclient.c             | 2 +-
+ libstats/push_compat/statsd_writer.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/libnetutils/dhcpclient.c b/libnetutils/dhcpclient.c
+index 11c116a51..ad6898cf0 100644
+--- a/libnetutils/dhcpclient.c
++++ b/libnetutils/dhcpclient.c
+@@ -45,7 +45,7 @@ static char errmsg[2048];
+ 
+ typedef unsigned long long msecs_t;
+ #if VERBOSE
+-void dump_dhcp_msg();
++void dump_dhcp_msg(dhcp_msg *msg, int len);
+ #endif
+ 
+ msecs_t get_msecs(void)
+diff --git a/libstats/push_compat/statsd_writer.c b/libstats/push_compat/statsd_writer.c
+index 04d3b4644..4818d1112 100644
+--- a/libstats/push_compat/statsd_writer.c
++++ b/libstats/push_compat/statsd_writer.c
+@@ -61,7 +61,7 @@ static int statsdAvailable();
+ static int statsdOpen();
+ static void statsdClose();
+ static int statsdWrite(struct timespec* ts, struct iovec* vec, size_t nr);
+-static void statsdNoteDrop();
++static void statsdNoteDrop(int error, int tag);
+ 
+ struct android_log_transport_write statsdLoggerWrite = {
+         .name = "statsd",
+-- 
+2.38.1
+

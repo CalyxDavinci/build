@@ -1,0 +1,40 @@
+From 86c75f49b8f9dbafc560f9f8b0abddbb5fc20e49 Mon Sep 17 00:00:00 2001
+From: Jordan R Abrahams-Whitehead <ajordanr@google.com>
+Date: Mon, 9 May 2022 17:42:54 +0000
+Subject: [PATCH] floss: Remove noop std::move(task_)
+
+Moves, in general, are semantically equivalent to a static
+cast to an xvalue. Unless there's some std::move overrides
+here that really shouldn't happen, this std::move(task_) is
+actually a noop.
+
+This is currently giving a -Wunused-value compiler error,
+and needs to be updated for the new LLVM roll to r458507.
+
+This change is required for LLVM roll r458507 in ChromeOS.
+
+Bug: 231351802
+Test: CQ
+Test: emerge-amd64-generic net-wireless/floss # with llvm-next
+Tag: #floss
+
+Change-Id: I893217cf0966a7a62e30f4bd2c0a46791e9f016b
+---
+ system/common/once_timer.cc | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/system/common/once_timer.cc b/system/common/once_timer.cc
+index 56e72592de..79d28a1cfa 100644
+--- a/system/common/once_timer.cc
++++ b/system/common/once_timer.cc
+@@ -104,7 +104,6 @@ void OnceTimer::CancelHelper(std::promise<void> promise) {
+ void OnceTimer::CancelClosure(std::promise<void> promise) {
+   message_loop_thread_ = nullptr;
+   task_wrapper_.Cancel();
+-  std::move(task_);
+   delay_ = base::TimeDelta();
+   promise.set_value();
+ }
+-- 
+2.38.1
+

@@ -1,0 +1,31 @@
+From 89cc08f5ee78597572d2f7daeb2f5aa7c97143ee Mon Sep 17 00:00:00 2001
+From: Yi Kong <yikong@google.com>
+Date: Wed, 22 Jun 2022 03:41:56 +0800
+Subject: [PATCH] Fix linker error with upstream llvm
+
+https://reviews.llvm.org/rGd07ff995917 changed behaviour of lld and is
+no longer accepting single dash `-error-limit`. Update to the new flag
+format.
+
+Test: presubmit
+Change-Id: I7a78128c56157414411d085086091b9d25be0186
+---
+ Tethering/Android.bp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Tethering/Android.bp b/Tethering/Android.bp
+index 2c7b8686f..86056d8b9 100644
+--- a/Tethering/Android.bp
++++ b/Tethering/Android.bp
+@@ -133,7 +133,7 @@ cc_library {
+         "-Wthread-safety",
+     ],
+ 
+-    ldflags: ["-Wl,--exclude-libs=ALL,-error-limit=0"],
++    ldflags: ["-Wl,--exclude-libs=ALL,--error-limit=0"],
+ }
+ 
+ // Common defaults for compiling the actual APK.
+-- 
+2.38.1
+

@@ -1,0 +1,374 @@
+From 1e37ca2dd8e67b32a0d9a36df99eac139f8a9c3a Mon Sep 17 00:00:00 2001
+From: Elliott Hughes <enh@google.com>
+Date: Tue, 12 Jul 2022 13:32:02 -0700
+Subject: [PATCH 2/4] Sync with upstream openbsd.
+
+Note that this is only a partial update; some other files have changes
+upstream that aren't here, but they're changes that seem to require a
+bit more thought, whereas these seem easy (and the base64.c and fputws.c
+C2x compatibility changes were the motivation to sync right now).
+
+Test: treehugger
+Change-Id: I2f86708e25bcb9e779ecb6f9643b769cd4f83240
+---
+ libc/upstream-openbsd/lib/libc/gdtoa/misc.c   |  2 +-
+ libc/upstream-openbsd/lib/libc/gen/alarm.c    | 13 +++---
+ .../upstream-openbsd/lib/libc/gen/charclass.h |  4 +-
+ libc/upstream-openbsd/lib/libc/gen/daemon.c   |  4 +-
+ libc/upstream-openbsd/lib/libc/gen/fnmatch.c  |  4 +-
+ libc/upstream-openbsd/lib/libc/gen/ftok.c     |  5 ++-
+ libc/upstream-openbsd/lib/libc/net/base64.c   | 32 ++++++---------
+ libc/upstream-openbsd/lib/libc/stdio/fputws.c |  6 +--
+ .../upstream-openbsd/lib/libc/stdio/setvbuf.c |  3 +-
+ .../lib/libc/stdlib/lsearch.c                 | 40 ++++++-------------
+ .../lib/libc/stdlib/recallocarray.c           |  4 +-
+ 11 files changed, 47 insertions(+), 70 deletions(-)
+
+diff --git a/libc/upstream-openbsd/lib/libc/gdtoa/misc.c b/libc/upstream-openbsd/lib/libc/gdtoa/misc.c
+index 79a310495..fef51a954 100644
+--- a/libc/upstream-openbsd/lib/libc/gdtoa/misc.c
++++ b/libc/upstream-openbsd/lib/libc/gdtoa/misc.c
+@@ -41,7 +41,7 @@ static double private_mem[PRIVATE_mem], *pmem_next = private_mem;
+ #endif
+ 
+ #ifdef MULTIPLE_THREADS
+-extern void *__dtoa_locks[];
++static void *__dtoa_locks[] = { NULL, NULL };
+ #endif
+ 
+  Bigint *
+diff --git a/libc/upstream-openbsd/lib/libc/gen/alarm.c b/libc/upstream-openbsd/lib/libc/gen/alarm.c
+index f15dd1512..ac17f9d04 100644
+--- a/libc/upstream-openbsd/lib/libc/gen/alarm.c
++++ b/libc/upstream-openbsd/lib/libc/gen/alarm.c
+@@ -1,4 +1,4 @@
+-/*	$OpenBSD: alarm.c,v 1.9 2019/06/28 13:32:41 deraadt Exp $ */
++/*	$OpenBSD: alarm.c,v 1.10 2021/06/24 22:43:31 cheloha Exp $ */
+ /*
+  * Copyright (c) 1983, 1993
+  *	The Regents of the University of California.  All rights reserved.
+@@ -34,13 +34,12 @@
+ unsigned int
+ alarm(unsigned int secs)
+ {
+-	struct itimerval it, oitv;
+-	struct itimerval *itp = &it;
++	struct itimerval itv, oitv;
+ 
+-	timerclear(&itp->it_interval);
+-	itp->it_value.tv_sec = secs;
+-	itp->it_value.tv_usec = 0;
+-	if (setitimer(ITIMER_REAL, itp, &oitv) == -1)
++	timerclear(&itv.it_interval);
++	itv.it_value.tv_sec = secs;
++	itv.it_value.tv_usec = 0;
++	if (setitimer(ITIMER_REAL, &itv, &oitv) == -1)
+ 		return ((unsigned int) -1);
+ 	if (oitv.it_value.tv_usec)
+ 		oitv.it_value.tv_sec++;
+diff --git a/libc/upstream-openbsd/lib/libc/gen/charclass.h b/libc/upstream-openbsd/lib/libc/gen/charclass.h
+index 073baf69c..1d1ec0795 100644
+--- a/libc/upstream-openbsd/lib/libc/gen/charclass.h
++++ b/libc/upstream-openbsd/lib/libc/gen/charclass.h
+@@ -1,13 +1,13 @@
+ /*
+  * Public domain, 2008, Todd C. Miller <millert@openbsd.org>
+  *
+- * $OpenBSD: charclass.h,v 1.2 2019/01/25 00:19:25 millert Exp $
++ * $OpenBSD: charclass.h,v 1.3 2020/10/13 04:42:28 guenther Exp $
+  */
+ 
+ /*
+  * POSIX character class support for fnmatch() and glob().
+  */
+-static struct cclass {
++static const struct cclass {
+ 	const char *name;
+ 	int (*isctype)(int);
+ } cclasses[] = {
+diff --git a/libc/upstream-openbsd/lib/libc/gen/daemon.c b/libc/upstream-openbsd/lib/libc/gen/daemon.c
+index 79f426473..b84cb4fb8 100644
+--- a/libc/upstream-openbsd/lib/libc/gen/daemon.c
++++ b/libc/upstream-openbsd/lib/libc/gen/daemon.c
+@@ -1,4 +1,4 @@
+-/*	$OpenBSD: daemon.c,v 1.7 2010/07/27 22:29:09 marco Exp $ */
++/*	$OpenBSD: daemon.c,v 1.8 2021/10/24 21:24:20 deraadt Exp $ */
+ /*-
+  * Copyright (c) 1990, 1993
+  *	The Regents of the University of California.  All rights reserved.
+@@ -53,7 +53,7 @@ daemon(int nochdir, int noclose)
+ 	if (!nochdir)
+ 		(void)chdir("/");
+ 
+-	if (!noclose && (fd = open(_PATH_DEVNULL, O_RDWR, 0)) != -1) {
++	if (!noclose && (fd = open(_PATH_DEVNULL, O_RDWR)) != -1) {
+ 		(void)dup2(fd, STDIN_FILENO);
+ 		(void)dup2(fd, STDOUT_FILENO);
+ 		(void)dup2(fd, STDERR_FILENO);
+diff --git a/libc/upstream-openbsd/lib/libc/gen/fnmatch.c b/libc/upstream-openbsd/lib/libc/gen/fnmatch.c
+index d7afd5f8e..ff6b26e98 100644
+--- a/libc/upstream-openbsd/lib/libc/gen/fnmatch.c
++++ b/libc/upstream-openbsd/lib/libc/gen/fnmatch.c
+@@ -1,4 +1,4 @@
+-/*	$OpenBSD: fnmatch.c,v 1.22 2020/03/13 03:25:45 djm Exp $	*/
++/*	$OpenBSD: fnmatch.c,v 1.23 2020/10/13 04:42:28 guenther Exp $	*/
+ 
+ /* Copyright (c) 2011, VMware, Inc.
+  * All rights reserved.
+@@ -100,7 +100,7 @@ classmatch(const char *pattern, char test, int foldcase, const char **ep)
+ {
+ 	const char * const mismatch = pattern;
+ 	const char *colon;
+-	struct cclass *cc;
++	const struct cclass *cc;
+ 	int rval = RANGE_NOMATCH;
+ 	size_t len;
+ 
+diff --git a/libc/upstream-openbsd/lib/libc/gen/ftok.c b/libc/upstream-openbsd/lib/libc/gen/ftok.c
+index ea1edf1af..9edcd3000 100644
+--- a/libc/upstream-openbsd/lib/libc/gen/ftok.c
++++ b/libc/upstream-openbsd/lib/libc/gen/ftok.c
+@@ -1,4 +1,4 @@
+-/*	$OpenBSD: ftok.c,v 1.9 2019/06/28 13:32:41 deraadt Exp $ */
++/*	$OpenBSD: ftok.c,v 1.10 2022/04/13 16:23:53 millert Exp $ */
+ /*
+  * Copyright (c) 1994 SigmaSoft, Th. Lockert <tholo@sigmasoft.com>
+  * All rights reserved.
+@@ -32,11 +32,12 @@
+ key_t
+ ftok(const char *path, int id)
+ {
++	const unsigned int u_id = id;
+ 	struct stat st;
+ 
+ 	if (stat(path, &st) == -1)
+ 		return (key_t)-1;
+ 
+ 	return (key_t)
+-	    ((id & 0xff) << 24 | (st.st_dev & 0xff) << 16 | (st.st_ino & 0xffff));
++	    ((u_id & 0xff) << 24 | (st.st_dev & 0xff) << 16 | (st.st_ino & 0xffff));
+ }
+diff --git a/libc/upstream-openbsd/lib/libc/net/base64.c b/libc/upstream-openbsd/lib/libc/net/base64.c
+index e90696df6..f36c11a21 100644
+--- a/libc/upstream-openbsd/lib/libc/net/base64.c
++++ b/libc/upstream-openbsd/lib/libc/net/base64.c
+@@ -1,4 +1,4 @@
+-/*	$OpenBSD: base64.c,v 1.8 2015/01/16 16:48:51 deraadt Exp $	*/
++/*	$OpenBSD: base64.c,v 1.15 2021/10/25 14:41:09 jca Exp $	*/
+ 
+ /*
+  * Copyright (c) 1996 by Internet Software Consortium.
+@@ -46,11 +46,9 @@
+ #include <sys/socket.h>
+ #include <netinet/in.h>
+ #include <arpa/inet.h>
+-#include <arpa/nameser.h>
+ 
+ #include <ctype.h>
+ #include <resolv.h>
+-#include <stdio.h>
+ 
+ #include <stdlib.h>
+ #include <string.h>
+@@ -107,9 +105,9 @@ static const char Pad64 = '=';
+    end of the data is performed using the '=' character.
+ 
+    Since all base64 input is an integral number of octets, only the
+-         -------------------------------------------------                       
++         -------------------------------------------------
+    following cases can arise:
+-   
++
+        (1) the final quantum of encoding input is an integral
+            multiple of 24 bits; here, the final unit of encoded
+ 	   output will be an integral multiple of 4 characters
+@@ -123,15 +121,12 @@ static const char Pad64 = '=';
+    */
+ 
+ int
+-b64_ntop(src, srclength, target, targsize)
+-	u_char const *src;
+-	size_t srclength;
+-	char *target;
+-	size_t targsize;
++b64_ntop(unsigned char const *src, size_t srclength, char *target,
++    size_t targsize)
+ {
+ 	size_t datalength = 0;
+-	u_char input[3];
+-	u_char output[4];
++	unsigned char input[3];
++	unsigned char output[4];
+ 	int i;
+ 
+ 	while (2 < srclength) {
+@@ -152,14 +147,14 @@ b64_ntop(src, srclength, target, targsize)
+ 		target[datalength++] = Base64[output[2]];
+ 		target[datalength++] = Base64[output[3]];
+ 	}
+-    
++
+ 	/* Now we worry about padding. */
+ 	if (0 != srclength) {
+ 		/* Get what's left. */
+ 		input[0] = input[1] = input[2] = '\0';
+ 		for (i = 0; i < srclength; i++)
+ 			input[i] = *src++;
+-	
++
+ 		output[0] = input[0] >> 2;
+ 		output[1] = ((input[0] & 0x03) << 4) + (input[1] >> 4);
+ 		output[2] = ((input[1] & 0x0f) << 2) + (input[2] >> 6);
+@@ -187,13 +182,10 @@ b64_ntop(src, srclength, target, targsize)
+  */
+ 
+ int
+-b64_pton(src, target, targsize)
+-	char const *src;
+-	u_char *target;
+-	size_t targsize;
++b64_pton(char const *src, unsigned char *target, size_t targsize)
+ {
+ 	int tarindex, state, ch;
+-	u_char nextbyte;
++	unsigned char nextbyte;
+ 	char *pos;
+ 
+ 	state = 0;
+@@ -207,7 +199,7 @@ b64_pton(src, target, targsize)
+ 			break;
+ 
+ 		pos = strchr(Base64, ch);
+-		if (pos == 0) 		/* A non-base64 character. */
++		if (pos == 0)		/* A non-base64 character. */
+ 			return (-1);
+ 
+ 		switch (state) {
+diff --git a/libc/upstream-openbsd/lib/libc/stdio/fputws.c b/libc/upstream-openbsd/lib/libc/stdio/fputws.c
+index 896157118..4f619b6d8 100644
+--- a/libc/upstream-openbsd/lib/libc/stdio/fputws.c
++++ b/libc/upstream-openbsd/lib/libc/stdio/fputws.c
+@@ -1,4 +1,4 @@
+-/*	$OpenBSD: fputws.c,v 1.8 2015/08/31 02:53:57 guenther Exp $	*/
++/*	$OpenBSD: fputws.c,v 1.9 2021/10/24 10:05:23 jsg Exp $	*/
+ /* $NetBSD: fputws.c,v 1.1 2003/03/07 07:11:37 tshiozak Exp $ */
+ 
+ /*-
+@@ -37,9 +37,7 @@
+ #include "fvwrite.h"
+ 
+ int
+-fputws(ws, fp)
+-	const wchar_t * __restrict ws;
+-	FILE * __restrict fp;
++fputws(const wchar_t * __restrict ws, FILE * __restrict fp)
+ {
+ 	FLOCKFILE(fp);
+ 	_SET_ORIENTATION(fp, 1);
+diff --git a/libc/upstream-openbsd/lib/libc/stdio/setvbuf.c b/libc/upstream-openbsd/lib/libc/stdio/setvbuf.c
+index da68b9042..9a08d133f 100644
+--- a/libc/upstream-openbsd/lib/libc/stdio/setvbuf.c
++++ b/libc/upstream-openbsd/lib/libc/stdio/setvbuf.c
+@@ -131,7 +131,8 @@ nbf:
+ 		flags |= __SNPT;
+ 
+ 	/*
+-	 * Fix up the FILE fields.
++	 * Fix up the FILE fields, and set __cleanup for output flush on
++	 * exit (since we are buffered in some way).
+ 	 */
+ 	if (mode == _IOLBF)
+ 		flags |= __SLBF;
+diff --git a/libc/upstream-openbsd/lib/libc/stdlib/lsearch.c b/libc/upstream-openbsd/lib/libc/stdlib/lsearch.c
+index 8cad05f51..95ebf49b8 100644
+--- a/libc/upstream-openbsd/lib/libc/stdlib/lsearch.c
++++ b/libc/upstream-openbsd/lib/libc/stdlib/lsearch.c
+@@ -1,4 +1,4 @@
+-/*	$OpenBSD: lsearch.c,v 1.5 2014/07/18 04:16:09 matthew Exp $	*/
++/*	$OpenBSD: lsearch.c,v 1.7 2021/12/08 22:06:28 cheloha Exp $	*/
+ 
+ /*
+  * Copyright (c) 1989, 1993
+@@ -37,27 +37,27 @@
+ #include <search.h>
+ 
+ typedef int (*cmp_fn_t)(const void *, const void *);
+-static void *linear_base(const void *, const void *, size_t *, size_t,
+-    cmp_fn_t, int);
+ 
+ void *
+ lsearch(const void *key, void *base, size_t *nelp, size_t width,
+     	cmp_fn_t compar)
+ {
++	void *element = lfind(key, base, nelp, width, compar);
+ 
+-	return(linear_base(key, base, nelp, width, compar, 1));
++	/*
++	 * Use memmove(3) to ensure the key is copied cleanly into the
++	 * array, even if the key overlaps with the end of the array.
++	 */
++	if (element == NULL) {
++		element = memmove((char *)base + *nelp * width, key, width);
++		*nelp += 1;
++	}
++	return element;
+ }
+ 
+ void *
+ lfind(const void *key, const void *base, size_t *nelp, size_t width,
+ 	cmp_fn_t compar)
+-{
+-	return(linear_base(key, base, nelp, width, compar, 0));
+-}
+-
+-static void *
+-linear_base(const void *key, const void *base, size_t *nelp, size_t width,
+-	cmp_fn_t compar, int add_flag)
+ {
+ 	const char *element, *end;
+ 
+@@ -65,20 +65,6 @@ linear_base(const void *key, const void *base, size_t *nelp, size_t width,
+ 	for (element = base; element < end; element += width)
+ 		if (!compar(key, element))		/* key found */
+ 			return((void *)element);
+-
+-	if (!add_flag)					/* key not found */
+-		return(NULL);
+-
+-	/*
+-	 * The UNIX System User's Manual, 1986 edition claims that
+-	 * a NULL pointer is returned by lsearch with errno set
+-	 * appropriately, if there is not enough room in the table
+-	 * to add a new item.  This can't be done as none of these
+-	 * routines have any method of determining the size of the
+-	 * table.  This comment isn't in the 1986-87 System V
+-	 * manual.
+-	 */
+-	++*nelp;
+-	memcpy((void *)end, key, width);
+-	return((void *)end);
++	return NULL;
+ }
++DEF_WEAK(lfind);
+diff --git a/libc/upstream-openbsd/lib/libc/stdlib/recallocarray.c b/libc/upstream-openbsd/lib/libc/stdlib/recallocarray.c
+index a2f37fe81..81059e6ae 100644
+--- a/libc/upstream-openbsd/lib/libc/stdlib/recallocarray.c
++++ b/libc/upstream-openbsd/lib/libc/stdlib/recallocarray.c
+@@ -1,4 +1,4 @@
+-/*	$OpenBSD: recallocarray.c,v 1.1 2017/03/06 18:44:21 otto Exp $	*/
++/*	$OpenBSD: recallocarray.c,v 1.2 2021/03/18 11:16:58 claudio Exp $	*/
+ /*
+  * Copyright (c) 2008, 2017 Otto Moerbeek <otto@drijf.net>
+  *
+@@ -57,7 +57,7 @@ recallocarray(void *ptr, size_t oldnmemb, size_t newnmemb, size_t size)
+ 	if (newsize <= oldsize) {
+ 		size_t d = oldsize - newsize;
+ 
+-		if (d < oldsize / 2 && d < getpagesize()) {
++		if (d < oldsize / 2 && d < (size_t)getpagesize()) {
+ 			memset((char *)ptr + newsize, 0, d);
+ 			return ptr;
+ 		}
+-- 
+2.38.1
+

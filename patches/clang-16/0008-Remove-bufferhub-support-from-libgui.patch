@@ -1,0 +1,56 @@
+From 13f48ac16399a7c6999655d2a37fce4de1a78b5e Mon Sep 17 00:00:00 2001
+From: Peter Collingbourne <pcc@google.com>
+Date: Fri, 30 Sep 2022 10:46:59 -0700
+Subject: [PATCH] Remove bufferhub support from libgui.
+
+As far as I can tell the bufferhub support in libgui was never completed,
+and it is unused except for tests and the libdvr library (which is
+also unused except for benchmarks and tests, which I also removed,
+and its headers which I kept for now). This will allow building the
+platform with newer compilers that diagnose invalid code in libpdx,
+one of bufferhub's dependencies.
+
+Bug: 246977679
+Change-Id: Iff5f879c2bb5583e789a604d64638e8ce7d2b2c5
+---
+ build/tasks/tests/native_metric_test_list.mk | 1 -
+ build/tasks/tests/native_test_list.mk        | 4 ----
+ 2 files changed, 5 deletions(-)
+
+diff --git a/build/tasks/tests/native_metric_test_list.mk b/build/tasks/tests/native_metric_test_list.mk
+index f6eca910f..4ec33aaa2 100644
+--- a/build/tasks/tests/native_metric_test_list.mk
++++ b/build/tasks/tests/native_metric_test_list.mk
+@@ -16,7 +16,6 @@ native_metric_tests := \
+     binderAddInts \
+     binderRpcBenchmark \
+     bionic-benchmarks \
+-    buffer_transport_benchmark \
+     hwuimacro \
+     hwuimicro \
+     inputflinger_benchmarks \
+diff --git a/build/tasks/tests/native_test_list.mk b/build/tasks/tests/native_test_list.mk
+index e0dcb9246..bfb9b9242 100644
+--- a/build/tasks/tests/native_test_list.mk
++++ b/build/tasks/tests/native_test_list.mk
+@@ -41,7 +41,6 @@ native_tests := \
+     bsdiff_unittest \
+     buffer_hub-test \
+     buffer_hub_queue-test \
+-    buffer_hub_queue_producer-test \
+     bugreportz_test \
+     bytes_test_tests_test_buf \
+     bytes_test_tests_test_buf_mut \
+@@ -63,9 +62,6 @@ native_tests := \
+     dumpstate_test \
+     dumpstate_test_fixture \
+     dumpsys_test \
+-    dvr_api-test \
+-    dvr_buffer_queue-test \
+-    dvr_display-test \
+     gpuservice_unittest \
+     gwp_asan_unittest \
+     hello_world_test \
+-- 
+2.38.1
+

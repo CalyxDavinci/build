@@ -1,0 +1,27 @@
+From c5018a6aadefbbc177a1ac681d15d67314e5f1ff Mon Sep 17 00:00:00 2001
+From: Jens Reidel <adrian@travitia.xyz>
+Date: Thu, 10 Nov 2022 23:38:38 +0200
+Subject: [PATCH] uwb: Update source for Rust 1.65.0
+
+Change-Id: I99c576dca6f63b4d9c8710f9a74bc67802c5722e
+Signed-off-by: Jens Reidel <adrian@travitia.xyz>
+---
+ src/rust/event_manager/mod.rs | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/rust/event_manager/mod.rs b/src/rust/event_manager/mod.rs
+index 90aaf67..b5378d7 100644
+--- a/src/rust/event_manager/mod.rs
++++ b/src/rust/event_manager/mod.rs
+@@ -148,7 +148,7 @@ impl EventManagerImpl {
+ 
+     fn get_classloader_obj<'a>(env: &'a JNIEnv) -> Result<JObject<'a>> {
+         // Use UwbRangingData class to find the classloader used by the java service.
+-        let ranging_data_class = env.find_class(&UWB_RANGING_DATA_CLASS)?;
++        let ranging_data_class = env.find_class(UWB_RANGING_DATA_CLASS)?;
+         let ranging_data_class_class = env.get_object_class(ranging_data_class)?;
+         let get_class_loader_method = env.get_method_id(
+             ranging_data_class_class,
+-- 
+2.38.1
+

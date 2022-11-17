@@ -1,0 +1,59 @@
+From c1e555f59361b7cec8def27311d9085add5e973d Mon Sep 17 00:00:00 2001
+From: Yi Kong <yikong@google.com>
+Date: Thu, 20 Oct 2022 14:45:52 +0900
+Subject: [PATCH 08/11] Enable ICF=safe for host binaries as well
+
+We regressed binary size when we switch Darwin to use LLD, because
+Darwin LD64 does ICF by default. Turn on ICF for host binaries to regain
+the binary size savings (saves some space for Linux as well).
+
+Test: presubmit
+Bug: 236924555
+Change-Id: I433062c3d263d69e431c1552faf1f18b13c5da42
+---
+ cc/config/global.go | 13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
+
+diff --git a/cc/config/global.go b/cc/config/global.go
+index f94ef76c6..4f177700b 100644
+--- a/cc/config/global.go
++++ b/cc/config/global.go
+@@ -146,6 +146,11 @@ var (
+ 		"-fdebug-info-for-profiling",
+ 	}
+ 
++	commonGlobalLldflags = []string{
++		"-fuse-ld=lld",
++		"-Wl,--icf=safe",
++	}
++
+ 	deviceGlobalCppflags = []string{
+ 		"-fvisibility-inlines-hidden",
+ 	}
+@@ -163,13 +168,9 @@ var (
+ 		"-Wl,--exclude-libs,libgcc_stripped.a",
+ 		"-Wl,--exclude-libs,libunwind_llvm.a",
+ 		"-Wl,--exclude-libs,libunwind.a",
+-		"-Wl,--icf=safe",
+ 	}
+ 
+-	deviceGlobalLldflags = append(deviceGlobalLdflags,
+-		[]string{
+-			"-fuse-ld=lld",
+-		}...)
++	deviceGlobalLldflags = append(deviceGlobalLdflags, commonGlobalLldflags...)
+ 
+ 	hostGlobalCflags = []string{}
+ 
+@@ -177,7 +178,7 @@ var (
+ 
+ 	hostGlobalLdflags = []string{}
+ 
+-	hostGlobalLldflags = []string{"-fuse-ld=lld"}
++	hostGlobalLldflags = commonGlobalLldflags
+ 
+ 	commonGlobalCppflags = []string{
+ 		"-Wsign-promo",
+-- 
+2.38.1
+

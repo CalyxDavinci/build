@@ -1,0 +1,26 @@
+From 36ea4ca386fcc85446f71da79e4023995131202b Mon Sep 17 00:00:00 2001
+From: Jens Reidel <adrian@travitia.xyz>
+Date: Fri, 11 Nov 2022 00:08:24 +0200
+Subject: [PATCH] config: Use adrian-clang for kernel build by default
+
+Change-Id: I0af7905f3f4575c973750cfb50ad614d45cc9c29
+---
+ config/BoardConfigKernel.mk | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/config/BoardConfigKernel.mk b/config/BoardConfigKernel.mk
+index 048a5d5e..e3d4e40f 100644
+--- a/config/BoardConfigKernel.mk
++++ b/config/BoardConfigKernel.mk
+@@ -78,7 +78,7 @@ ifneq ($(TARGET_KERNEL_CLANG_VERSION),)
+     KERNEL_CLANG_VERSION := clang-$(TARGET_KERNEL_CLANG_VERSION)
+ else
+     # Use the default version of clang if TARGET_KERNEL_CLANG_VERSION hasn't been set by the device config
+-    KERNEL_CLANG_VERSION := clang-r450784d
++    KERNEL_CLANG_VERSION := adrian-clang
+ endif
+ TARGET_KERNEL_CLANG_PATH ?= $(BUILD_TOP)/prebuilts/clang/host/$(HOST_PREBUILT_TAG)/$(KERNEL_CLANG_VERSION)
+ 
+-- 
+2.38.1
+

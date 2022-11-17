@@ -1,71 +1,73 @@
 {
-    "frameworks/base": [
-        "0001-base-Clang-15-backports.patch",
-        "0002-services.incremental-Use-shared-libutils-for-remount.patch"
-    ],
-    "build/soong": [
-        "0003-soong-Clang-14-15-16-Rust-1.63-backports.patch"
-    ],
     "bionic": [
-        "0004-Reland-Use-the-dynamic-table-instead-of-__rela-_iplt.patch"
-    ],
-    "system/extras": [
-        "0005-libprofcollectd-Fix-Rust-1.62-build-errors.patch"
-    ],
-    "prebuilts/clang/host/linux-x86": [
-        "0006-No-scudo-prebuilts-since-clang-r437112.patch"
-    ],
-    "build/make": [
-        "0007-make-Change-llvm-ar-format-to-be-format.patch"
-    ],
-    "external/harfbuzz_ng": [
-        "0008-Do-not-use-pragma-diagnostics-as-a-workaround.patch"
-    ],
-    "system/netd": [
-        "0009-netd-Clang-15-backports.patch"
-    ],
-    "external/mdnsresponder": [
-        "0010-Increase-keyword-buffer-size-to-11-since-we-read-up-.patch"
-    ],
-    "system/apex": [
-        "0011-Remove-redundant-using-statement.patch"
+        "0001-Rewrite-function-definitions-with-identifier-lists.patch",
+        "0002-Sync-with-upstream-openbsd.patch",
+        "0003-Sync-libm-with-upstream-freebsd.patch",
+        "0004-Use-liblog_for_runtime_apex-instead-of-liblog.patch"
     ],
     "frameworks/native": [
-        "0012-libbinder-Remove-redundant-using-android.patch",
-        "0013-Fix-error-for-compiler-update.patch",
-        "0014-binder-Fix-new-Rust-compiler-errors.patch"
+        "0005-Deleted-clang-property-in-Android.bp-files.patch",
+        "0006-Remove-bufferhub-support-from-libgui.patch",
+        "0007-binder-Fix-compatibility-with-newer-bindgen.patch"
     ],
-    "frameworks/av": [
-        "0015-MediaMetrics-fix-error-for-compiler-update.patch",
-        "0016-Suppress-ordered-compare-function-pointers-warning.patch"
+    "platform_testing": [
+        "0008-Remove-bufferhub-support-from-libgui.patch"
     ],
-    "art": [
-        "0017-Switch-to-an-assembler-macro-for-CFI_RESTORE_STATE_A.patch",
-        "0018-Suppress-three-counts-of-compiler-warnings-for-frame.patch",
-        "0019-art-Remove-deprecated-and-redundant-declarations.patch"
+    "external/minijail": [
+        "0009-libminijail-Use-bool-for-flags.patch"
     ],
-    "packages/modules/DnsResolver": [
-        "0020-Sanitize-buffer-alignment-macros.patch",
-        "0021-DnsResolver-Remove-redundant-using-statements.patch"
+    "system/core": [
+        "0010-Rewrite-function-declarators-without-prototypes.patch",
+        "0011-Use-liblog_for_runtime_apex-instead-of-liblog.patch"
     ],
-    "prebuilts/rust": [
-        "0022-rust-Backport-to-old-soong.patch"
+    "packages/modules/StatsD": [
+        "0012-Rewrite-function-declarators-without-prototypes.patch"
     ],
-    "packages/modules/Connectivity": [
-        "0023-Fix-deprecated-error-limit-linker-flag.patch"
+    "hardware/qcom-caf/sm8150/audio": [
+        "0013-audio-Don-t-error-on-new-clang-16-warnings.patch"
     ],
-    "system/bt": [
-        "0024-bt-Add-missing-dependencies-on-libbase.patch",
-        "0025-floss-Remove-noop-std-move-task_.patch",
-        "0026-bt-Fix-warnings-in-preparation-for-Rust-1.63.0.patch"
+    "system/logging": [
+        "0014-Turn-off-LTO-for-32-bit-liblog-as-a-workaround.patch",
+        "0015-Use-liblog_for_runtime_apex-instead-of-liblog.patch"
+    ],
+    "system/apex": [
+        "0016-Use-liblog_for_runtime_apex-instead-of-liblog.patch"
+    ],
+    "system/linkerconfig": [
+        "0017-Use-liblog_for_runtime_apex-instead-of-liblog.patch"
+    ],
+    "external/libhevc": [
+        "0018-encoder-Fix-enum-conversion-warning.patch"
+    ],
+    "prebuilts/clang-tools": [
+        "0019-clang-tools-Update-bindgen-to-0.62.patch"
     ],
     "system/security": [
-        "0027-Fix-warnings-in-preparation-for-Rust-1.63.0.patch"
+        "0020-keystore2-Fix-compatibility-with-newer-bindgen.patch"
     ],
-    "system/connectivity/wificond": [
-        "0028-Remove-libutils.a-whole_static_lib-from-libwificond_.patch"
+    "system/librustutils": [
+        "0021-librustutils-Fix-compatibility-with-newer-bindgen.patch"
+    ],
+    "packages/modules/Bluetooth": [
+        "0022-floss-Remove-noop-std-move-task_.patch"
+    ],
+    "packages/modules/Connectivity": [
+        "0023-Fix-linker-error-with-upstream-llvm.patch"
+    ],
+    "build/soong": [
+        "0024-Reland-Update-to-clang-r450784e.patch",
+        "0025-Add-extra-cflags-for-LLVM_NEXT.patch",
+        "0026-Update-clang-version-to-clang-r458507.patch",
+        "0027-Globally-force-Wdeprecated-declarations-to-be-a-warn.patch",
+        "0028-Prepare-to-build-clang-r468909.patch",
+        "0029-Update-clang-version-to-clang-r468909.patch",
+        "0030-Update-clang-version-to-clang-r468909b.patch",
+        "0031-Enable-ICF-safe-for-host-binaries-as-well.patch",
+        "0032-Prepare-to-build-clang-r475365.patch",
+        "0033-Remove-deprecated-experimental-new-pass-manager-flag.patch",
+        "0034-build-Use-adrian-clang-16-instead-of-AOSP-clang-15.patch"
     ],
     "vendor/calyx": [
-        "0029-config-Use-adrian-clang-for-kernel-build-by-default.patch"
+        "0035-config-Use-adrian-clang-for-kernel-build-by-default.patch"
     ]
 }

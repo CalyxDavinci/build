@@ -1,0 +1,353 @@
+From 5a8314efacf59e3bbb53fd36c1cd0f4ec6b6f9ce Mon Sep 17 00:00:00 2001
+From: Cosmin Tanislav <demonsingur@gmail.com>
+Date: Thu, 23 Jun 2022 01:44:32 +0300
+Subject: [PATCH] Settings: gestures: Add page for Screen-Off UDFPS
+
+Change-Id: I313969384fe605d7b5ff7dfc3a3fcebd514dd7cf
+---
+ res/values/cm_strings.xml                     |   9 ++
+ res/xml/gestures.xml                          |   7 ++
+ res/xml/screen_off_udfps_settings.xml         |  30 +++++
+ res/xml/security_lockscreen_settings.xml      |   7 ++
+ .../settings/gestures/GestureSettings.java    |   1 +
+ .../GesturesSettingPreferenceController.java  |   2 +
+ .../ScreenOffUdfpsPreferenceController.java   | 109 ++++++++++++++++++
+ .../gestures/ScreenOffUdfpsSettings.java      |  73 ++++++++++++
+ .../security/LockscreenDashboardFragment.java |   2 +
+ 9 files changed, 240 insertions(+)
+ create mode 100644 res/xml/screen_off_udfps_settings.xml
+ create mode 100644 src/com/android/settings/gestures/ScreenOffUdfpsPreferenceController.java
+ create mode 100644 src/com/android/settings/gestures/ScreenOffUdfpsSettings.java
+
+diff --git a/res/values/cm_strings.xml b/res/values/cm_strings.xml
+index dffc65f3df..ccdc981b30 100644
+--- a/res/values/cm_strings.xml
++++ b/res/values/cm_strings.xml
+@@ -94,4 +94,13 @@
+ 
+     <!-- Warning message for the sd card setup -->
+     <string name="storage_warning_internal">Warning: This option may not work properly or lead to data loss and is therefore not recommended!</string>
++
++    <!-- Preference and settings suggestion title text for screen off UDFPS (phone) [CHAR LIMIT=60]-->
++    <string name="ambient_display_screen_off_udfps_title" product="default">Long press on fingerprint sensor to unlock phone</string>
++    <!-- Preference and settings suggestion title text for screen off UDFPS  (tablet) [CHAR LIMIT=60]-->
++    <string name="ambient_display_screen_off_udfps_title" product="tablet">Long press on fingerprint sensor to unlock tablet</string>
++    <!-- Preference and settings suggestion title text for screen off UDFPS  (device) [CHAR LIMIT=60]-->
++    <string name="ambient_display_screen_off_udfps_title" product="device">Long press on fingerprint sensor to unlock device</string>
++    <!-- Summary text for screen off UDFPS [CHAR LIMIT=NONE]-->
++    <string name="ambient_display_screen_off_udfps_summary">To wake up your screen and unlock, long press your under-display fingerprint sensor.</string>
+ </resources>
+diff --git a/res/xml/gestures.xml b/res/xml/gestures.xml
+index 48813606fe..4795965943 100644
+--- a/res/xml/gestures.xml
++++ b/res/xml/gestures.xml
+@@ -81,6 +81,13 @@
+         settings:searchable="false"
+         settings:controller="com.android.settings.gestures.PickupGesturePreferenceController" />
+ 
++    <Preference
++        android:key="gesture_screen_off_udfps_input_summary"
++        android:title="@string/ambient_display_screen_off_udfps_title"
++        android:fragment="com.android.settings.gestures.ScreenOffUdfpsSettings"
++        settings:searchable="false"
++        settings:controller="com.android.settings.gestures.ScreenOffUdfpsPreferenceController" />
++
+     <Preference
+         android:key="gesture_power_menu_summary"
+         android:title="@string/power_menu_setting_name"
+diff --git a/res/xml/screen_off_udfps_settings.xml b/res/xml/screen_off_udfps_settings.xml
+new file mode 100644
+index 0000000000..f723321124
+--- /dev/null
++++ b/res/xml/screen_off_udfps_settings.xml
+@@ -0,0 +1,30 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!-- Copyright (C) 2022 The Android Open Source Project
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++-->
++
++<PreferenceScreen
++    xmlns:android="http://schemas.android.com/apk/res/android"
++    xmlns:app="http://schemas.android.com/apk/res-auto"
++    android:title="@string/ambient_display_screen_off_udfps_title">
++
++    <SwitchPreference
++        android:key="gesture_screen_off_udfps"
++        android:title="@string/ambient_display_screen_off_udfps_title"
++        android:summary="@string/ambient_display_screen_off_udfps_summary"
++        app:keywords="@string/keywords_gesture"
++        app:controller="com.android.settings.gestures.ScreenOffUdfpsPreferenceController"
++        app:allowDividerAbove="true" />
++
++</PreferenceScreen>
+diff --git a/res/xml/security_lockscreen_settings.xml b/res/xml/security_lockscreen_settings.xml
+index 3bd84f81ae..c93e630aaf 100644
+--- a/res/xml/security_lockscreen_settings.xml
++++ b/res/xml/security_lockscreen_settings.xml
+@@ -111,6 +111,13 @@
+             settings:searchable="false"
+             settings:controller="com.android.settings.gestures.PickupGesturePreferenceController" />
+ 
++        <Preference
++            android:key="gesture_screen_off_udfps_input_summary"
++            android:title="@string/ambient_display_screen_off_udfps_title"
++            android:fragment="com.android.settings.gestures.ScreenOffUdfpsSettings"
++            settings:searchable="false"
++            settings:controller="com.android.settings.gestures.ScreenOffUdfpsPreferenceController" />
++
+         <SwitchPreference
+             android:key="ambient_display_notification"
+             android:title="@string/doze_title"
+diff --git a/src/com/android/settings/gestures/GestureSettings.java b/src/com/android/settings/gestures/GestureSettings.java
+index d82cb108f5..4c2b099686 100644
+--- a/src/com/android/settings/gestures/GestureSettings.java
++++ b/src/com/android/settings/gestures/GestureSettings.java
+@@ -56,6 +56,7 @@ public class GestureSettings extends DashboardFragment {
+         use(AssistGestureSettingsPreferenceController.class).setAssistOnly(false);
+         use(PickupGesturePreferenceController.class).setConfig(getConfig(context));
+         use(DoubleTapScreenPreferenceController.class).setConfig(getConfig(context));
++        use(ScreenOffUdfpsPreferenceController.class).setConfig(getConfig(context));
+     }
+ 
+     private AmbientDisplayConfiguration getConfig(Context context) {
+diff --git a/src/com/android/settings/gestures/GesturesSettingPreferenceController.java b/src/com/android/settings/gestures/GesturesSettingPreferenceController.java
+index ff069ab358..a93b740d92 100644
+--- a/src/com/android/settings/gestures/GesturesSettingPreferenceController.java
++++ b/src/com/android/settings/gestures/GesturesSettingPreferenceController.java
+@@ -77,6 +77,8 @@ public class GesturesSettingPreferenceController extends BasePreferenceControlle
+         controllers.add(new DoubleTapScreenPreferenceController(context, FAKE_PREF_KEY)
+                 .setConfig(ambientDisplayConfiguration));
+         controllers.add(new PreventRingingParentPreferenceController(context, FAKE_PREF_KEY));
++        controllers.add(new ScreenOffUdfpsPreferenceController(context, FAKE_PREF_KEY)
++                .setConfig(ambientDisplayConfiguration));
+         return controllers;
+     }
+ }
+diff --git a/src/com/android/settings/gestures/ScreenOffUdfpsPreferenceController.java b/src/com/android/settings/gestures/ScreenOffUdfpsPreferenceController.java
+new file mode 100644
+index 0000000000..0128ea0fd1
+--- /dev/null
++++ b/src/com/android/settings/gestures/ScreenOffUdfpsPreferenceController.java
+@@ -0,0 +1,109 @@
++/*
++ * Copyright (C) 2022 The Android Open Source Project
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package com.android.settings.gestures;
++
++import android.annotation.UserIdInt;
++import android.content.Context;
++import android.content.SharedPreferences;
++import android.hardware.display.AmbientDisplayConfiguration;
++import android.os.UserHandle;
++import android.provider.Settings;
++import android.text.TextUtils;
++
++import androidx.annotation.VisibleForTesting;
++
++public class ScreenOffUdfpsPreferenceController extends GesturePreferenceController {
++
++    private final int ON = 1;
++    private final int OFF = 0;
++
++    private static final String PREF_KEY_VIDEO = "gesture_screen_off_udfps_video";
++
++    private static final String SECURE_KEY = "screen_off_udfps_enabled";
++
++    private AmbientDisplayConfiguration mAmbientConfig;
++    @UserIdInt
++    private final int mUserId;
++
++    public ScreenOffUdfpsPreferenceController(Context context, String key) {
++        super(context, key);
++        mUserId = UserHandle.myUserId();
++    }
++
++    public ScreenOffUdfpsPreferenceController setConfig(AmbientDisplayConfiguration config) {
++        mAmbientConfig = config;
++        return this;
++    }
++
++    private static boolean screenOffUdfpsAvailable(AmbientDisplayConfiguration config) {
++        return !TextUtils.isEmpty(config.udfpsLongPressSensorType());
++    }
++
++    public static boolean isSuggestionComplete(Context context, SharedPreferences prefs) {
++        return isSuggestionComplete(new AmbientDisplayConfiguration(context), prefs);
++    }
++
++    @VisibleForTesting
++    static boolean isSuggestionComplete(AmbientDisplayConfiguration config,
++            SharedPreferences prefs) {
++        return !screenOffUdfpsAvailable(config)
++                || prefs.getBoolean(ScreenOffUdfpsSettings.PREF_KEY_SUGGESTION_COMPLETE, false);
++    }
++
++    @Override
++    public int getAvailabilityStatus() {
++        // No hardware support for Screen-Off UDFPS
++        if (!screenOffUdfpsAvailable(mAmbientConfig)) {
++            return UNSUPPORTED_ON_DEVICE;
++        }
++
++        return AVAILABLE;
++    }
++
++    @Override
++    public boolean isSliceable() {
++        return TextUtils.equals(getPreferenceKey(), "gesture_screen_off_udfps");
++    }
++
++    @Override
++    public boolean isPublicSlice() {
++        return true;
++    }
++
++    @Override
++    public boolean setChecked(boolean isChecked) {
++        return Settings.Secure.putInt(mContext.getContentResolver(), SECURE_KEY,
++                isChecked ? ON : OFF);
++    }
++
++    @Override
++    protected String getVideoPrefKey() {
++        return PREF_KEY_VIDEO;
++    }
++
++    @Override
++    public boolean isChecked() {
++        return getAmbientConfig().screenOffUdfpsEnabled(mUserId);
++    }
++
++    private AmbientDisplayConfiguration getAmbientConfig() {
++        if (mAmbientConfig == null) {
++            mAmbientConfig = new AmbientDisplayConfiguration(mContext);
++        }
++        return mAmbientConfig;
++    }
++}
+diff --git a/src/com/android/settings/gestures/ScreenOffUdfpsSettings.java b/src/com/android/settings/gestures/ScreenOffUdfpsSettings.java
+new file mode 100644
+index 0000000000..751f0b3397
+--- /dev/null
++++ b/src/com/android/settings/gestures/ScreenOffUdfpsSettings.java
+@@ -0,0 +1,73 @@
++/*
++ * Copyright (C) 2022 The Android Open Source Project
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package com.android.settings.gestures;
++
++import android.app.settings.SettingsEnums;
++import android.content.Context;
++import android.content.SharedPreferences;
++import android.hardware.display.AmbientDisplayConfiguration;
++import android.provider.SearchIndexableResource;
++
++import com.android.settings.R;
++import com.android.settings.dashboard.DashboardFragment;
++import com.android.settings.dashboard.suggestions.SuggestionFeatureProvider;
++import com.android.settings.overlay.FeatureFactory;
++import com.android.settings.search.BaseSearchIndexProvider;
++import com.android.settingslib.search.SearchIndexable;
++
++import java.util.Arrays;
++import java.util.List;
++
++@SearchIndexable
++public class ScreenOffUdfpsSettings extends DashboardFragment {
++
++    private static final String TAG = "ScreenOffUdfps";
++
++    public static final String PREF_KEY_SUGGESTION_COMPLETE =
++            "pref_screen_off_udfps_suggestion_complete";
++
++    @Override
++    public void onAttach(Context context) {
++        super.onAttach(context);
++        SuggestionFeatureProvider suggestionFeatureProvider = FeatureFactory.getFactory(context)
++                .getSuggestionFeatureProvider(context);
++        SharedPreferences prefs = suggestionFeatureProvider.getSharedPrefs(context);
++        prefs.edit().putBoolean(PREF_KEY_SUGGESTION_COMPLETE, true).apply();
++
++        use(ScreenOffUdfpsPreferenceController.class)
++                .setConfig(new AmbientDisplayConfiguration(context));
++    }
++
++
++    @Override
++    public int getMetricsCategory() {
++        return SettingsEnums.PAGE_UNKNOWN;
++    }
++
++    @Override
++    protected String getLogTag() {
++        return TAG;
++    }
++
++    @Override
++    protected int getPreferenceScreenResId() {
++        return R.xml.screen_off_udfps_settings;
++    }
++
++    public static final BaseSearchIndexProvider SEARCH_INDEX_DATA_PROVIDER =
++            new BaseSearchIndexProvider(R.xml.screen_off_udfps_settings);
++}
+diff --git a/src/com/android/settings/security/LockscreenDashboardFragment.java b/src/com/android/settings/security/LockscreenDashboardFragment.java
+index 2e4a1f2891..cbd7edf3d9 100644
+--- a/src/com/android/settings/security/LockscreenDashboardFragment.java
++++ b/src/com/android/settings/security/LockscreenDashboardFragment.java
+@@ -37,6 +37,7 @@ import com.android.settings.display.AmbientDisplayAlwaysOnPreferenceController;
+ import com.android.settings.display.AmbientDisplayNotificationsPreferenceController;
+ import com.android.settings.gestures.DoubleTapScreenPreferenceController;
+ import com.android.settings.gestures.PickupGesturePreferenceController;
++import com.android.settings.gestures.ScreenOffUdfpsPreferenceController;
+ import com.android.settings.notification.LockScreenNotificationPreferenceController;
+ import com.android.settings.search.BaseSearchIndexProvider;
+ import com.android.settings.security.screenlock.LockScreenPreferenceController;
+@@ -113,6 +114,7 @@ public class LockscreenDashboardFragment extends DashboardFragment
+         use(AmbientDisplayNotificationsPreferenceController.class).setConfig(getConfig(context));
+         use(DoubleTapScreenPreferenceController.class).setConfig(getConfig(context));
+         use(PickupGesturePreferenceController.class).setConfig(getConfig(context));
++        use(ScreenOffUdfpsPreferenceController.class).setConfig(getConfig(context));
+ 
+         mControlsContentObserver = new ContentObserver(
+                 new Handler(Looper.getMainLooper())) {
+-- 
+2.38.1
+

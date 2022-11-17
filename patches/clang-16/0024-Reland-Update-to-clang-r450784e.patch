@@ -1,0 +1,34 @@
+From b948ee3502ef52a7a044ab4d9dc19bb9a261bd29 Mon Sep 17 00:00:00 2001
+From: Stephen Hines <srhines@google.com>
+Date: Mon, 2 May 2022 23:44:24 -0700
+Subject: [PATCH 01/11] Reland "Update to clang-r450784e"
+
+This reverts commit fbc5effdfd7b16c0cbc04ed94687d99228f95e94.
+
+Bug: http://b/197965342
+Bug: http://b/230930120
+Test: m and also test internal targets
+Change-Id: I49b2d80ef4191ebb08bb6e80507042ee628c7f09
+Merged-In: I49b2d80ef4191ebb08bb6e80507042ee628c7f09
+---
+ cc/config/global.go | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/cc/config/global.go b/cc/config/global.go
+index 185afd549..338b2ad4c 100644
+--- a/cc/config/global.go
++++ b/cc/config/global.go
+@@ -289,8 +289,8 @@ var (
+ 
+ 	// prebuilts/clang default settings.
+ 	ClangDefaultBase         = "prebuilts/clang/host"
+-	ClangDefaultVersion      = "clang-r450784d"
+-	ClangDefaultShortVersion = "14.0.6"
++	ClangDefaultVersion      = "clang-r450784e"
++	ClangDefaultShortVersion = "14.0.7"
+ 
+ 	// Directories with warnings from Android.bp files.
+ 	WarningAllowedProjects = []string{
+-- 
+2.38.1
+

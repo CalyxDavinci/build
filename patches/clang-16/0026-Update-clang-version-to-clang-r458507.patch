@@ -1,0 +1,54 @@
+From 526390def42917a39121908d50fa90e203c8a12f Mon Sep 17 00:00:00 2001
+From: Yi Kong <yikong@google.com>
+Date: Fri, 8 Jul 2022 13:47:09 +0800
+Subject: [PATCH 03/11] Update clang version to clang-r458507
+
+Test: presubmit
+Bug: 236798112
+Change-Id: Iff8df2b5c7faf359d0554994586bbc984b7a1856
+---
+ cc/config/global.go | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
+
+diff --git a/cc/config/global.go b/cc/config/global.go
+index 79f2a5a6c..916bc207c 100644
+--- a/cc/config/global.go
++++ b/cc/config/global.go
+@@ -237,6 +237,8 @@ var (
+ 		// New warnings to be fixed after clang-r433403
+ 		"-Wno-error=unused-but-set-variable",  // http://b/197240255
+ 		"-Wno-error=unused-but-set-parameter", // http://b/197240255
++		// New warnings to be fixed after clang-r458507
++		"-Wno-error=unqualified-std-cast-call", // http://b/239662094
+ 	}
+ 
+ 	noOverrideExternalGlobalCflags = []string{
+@@ -276,11 +278,12 @@ var (
+ 
+ 		// http://b/175068488
+ 		"-Wno-string-concatenation",
++
++		// http://b/239661264
++		"-Wno-deprecated-non-prototype",
+ 	}
+ 
+ 	llvmNextExtraCommonGlobalCflags = []string{
+-		"-Wno-unqualified-std-cast-call",
+-		"-Wno-deprecated-non-prototype",
+ 	}
+ 
+ 	IllegalFlags = []string{
+@@ -294,8 +297,8 @@ var (
+ 
+ 	// prebuilts/clang default settings.
+ 	ClangDefaultBase         = "prebuilts/clang/host"
+-	ClangDefaultVersion      = "clang-r450784e"
+-	ClangDefaultShortVersion = "14.0.7"
++	ClangDefaultVersion      = "clang-r458507"
++	ClangDefaultShortVersion = "15.0.1"
+ 
+ 	// Directories with warnings from Android.bp files.
+ 	WarningAllowedProjects = []string{
+-- 
+2.38.1
+

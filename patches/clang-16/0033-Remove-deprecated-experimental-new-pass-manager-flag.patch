@@ -1,0 +1,33 @@
+From ffcf28e57b7fb84c2d108ebf8ebba81d38a19b8c Mon Sep 17 00:00:00 2001
+From: Mitch Phillips <mitchp@google.com>
+Date: Thu, 3 Nov 2022 18:04:19 +0000
+Subject: [PATCH 10/11] Remove deprecated experimental-new-pass-manager flag.
+
+https://reviews.llvm.org/D136789 removed this flag, it's been a no-op
+since 15.0.0. The current Android compiler is 15.0.3, but upcoming
+compilers will error on the fact that this flag doesn't exist any more.
+
+Change-Id: I54666175b521ed5cdd76c53ed700ad4ddf6931da
+Test: make
+Bug: N/A
+---
+ cc/config/global.go | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/cc/config/global.go b/cc/config/global.go
+index 8b578f071..05b56dd16 100644
+--- a/cc/config/global.go
++++ b/cc/config/global.go
+@@ -76,9 +76,6 @@ var (
+ 		// Help catch common 32/64-bit errors.
+ 		"-Werror=int-conversion",
+ 
+-		// Enable the new pass manager.
+-		"-fexperimental-new-pass-manager",
+-
+ 		// Disable overly aggressive warning for macros defined with a leading underscore
+ 		// This happens in AndroidConfig.h, which is included nearly everywhere.
+ 		// TODO: can we remove this now?
+-- 
+2.38.1
+

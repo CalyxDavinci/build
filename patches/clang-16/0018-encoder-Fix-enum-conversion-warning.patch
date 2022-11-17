@@ -1,0 +1,32 @@
+From 6d74e0c0f42d69c3a900a9b12edb9229234a4a4e Mon Sep 17 00:00:00 2001
+From: Harish Mahendrakar <harish.mahendrakar@ittiam.com>
+Date: Wed, 3 Aug 2022 17:31:02 -0700
+Subject: [PATCH] encoder: Fix enum conversion warning
+
+ihevce_rc_conv_pic_type() had an initialization which
+was missing a typecast.
+
+Bug: 241128234
+Test: Builds
+
+Change-Id: Ie30cd6fcc98a2b6233afc0aaf81bff7a210e7101
+---
+ encoder/ihevce_rc_interface.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/encoder/ihevce_rc_interface.c b/encoder/ihevce_rc_interface.c
+index 71be434..ada9190 100644
+--- a/encoder/ihevce_rc_interface.c
++++ b/encoder/ihevce_rc_interface.c
+@@ -3817,7 +3817,7 @@ picture_type_e ihevce_rc_conv_pic_type(
+     WORD32 i4_is_bottom_field,
+     WORD32 i4_top_field_first)
+ {
+-    picture_type_e rc_pic_type = pic_type;
++    picture_type_e rc_pic_type = (picture_type_e)pic_type;
+     /*interlaced pictype are not supported*/
+     if(pic_type > 9 && i4_temporal_layer_id > 3) /**/
+     {
+-- 
+2.38.1
+

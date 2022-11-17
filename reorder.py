@@ -26,22 +26,25 @@ patch_index = find_patches(index_path)
 # Patches should be sorted properly already in the JSON array, so preserve that order
 patches = itertools.chain.from_iterable(patch_index.values())
 
+intermediate_paths = []
+
 for number, patch in enumerate(patches, 1):
     new_patch = change_patch_number(patch, number)
     old_path = os.path.join(path, patch)
     new_path = os.path.join(path, new_patch)
+    intermediate_path = f"{new_path}.tmp"
 
-    if old_path != new_path:
-        print(f"{old_path} -> {new_path}")
-        os.rename(old_path, new_path)
-        
-        for section, items in patch_index.items():
-            try:
-                idx = items.index(patch)
-            except ValueError:
-                continue
+    intermediate_paths.append((intermediate_path, new_path, patch, new_patch))
 
-            items[idx] = new_patch
-            break
+    print(f"{old_path} -> {new_path}")
+    os.rename(old_path, intermediate_path)
+
+for (intermediate_path, new_path, _, _) in intermediate_paths:
+    os.rename(intermediate_path, new_path)
+
+for section, items in patch_index.items():
+    for idx, item in enumerate(items):
+        new = [new_patch for (_, _, patch, new_patch) in intermediate_paths if item == patch][0]
+        items[idx] = new
 
 save_patches(index_path, patch_index)

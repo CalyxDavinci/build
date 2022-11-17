@@ -1,0 +1,37 @@
+From 3c294c994e9b420df6a83fae510d364b69d88772 Mon Sep 17 00:00:00 2001
+From: Chih-Hung Hsieh <chh@google.com>
+Date: Tue, 2 Aug 2022 12:03:50 -0700
+Subject: [PATCH 05/11] Prepare to build clang-r468909
+
+* Allow/show clang deprecated* and array-parameter warnings
+  to pass build.py with r468909.
+
+Test: presubmit
+Bug: 241941550
+Bug: 241601211
+Change-Id: I46bc1138861371ece24e88fad2d64fdf38ca605d
+---
+ cc/config/global.go | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/cc/config/global.go b/cc/config/global.go
+index 5181a83a9..a81d466c5 100644
+--- a/cc/config/global.go
++++ b/cc/config/global.go
+@@ -287,7 +287,12 @@ var (
+ 		"-Wno-deprecated-non-prototype",
+ 	}
+ 
+-	llvmNextExtraCommonGlobalCflags = []string{}
++	llvmNextExtraCommonGlobalCflags = []string{
++		// New warnings to be fixed after clang-r468909
++		"-Wno-error=array-parameter",     // http://b/241941550
++		"-Wno-error=deprecated-builtins", // http://b/241601211
++		"-Wno-error=deprecated",          // in external/googletest/googletest
++	}
+ 
+ 	IllegalFlags = []string{
+ 		"-w",
+-- 
+2.38.1
+
