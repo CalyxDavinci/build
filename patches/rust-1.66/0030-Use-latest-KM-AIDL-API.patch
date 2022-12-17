@@ -1,0 +1,35 @@
+From 5ba39e241e758645ea725b37f96548ca60f5b7c8 Mon Sep 17 00:00:00 2001
+From: Tri Vo <trong@google.com>
+Date: Fri, 2 Sep 2022 18:03:00 -0700
+Subject: [PATCH 22/29] Use latest KM AIDL API
+
+Test: m keystore2_legacy_blobs_test
+Change-Id: Ia76f720ffdacdfe8496e716890df50586e67753e
+---
+ keystore2/tests/legacy_blobs/Android.bp | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/keystore2/tests/legacy_blobs/Android.bp b/keystore2/tests/legacy_blobs/Android.bp
+index 9322a411..f25b5d5c 100644
+--- a/keystore2/tests/legacy_blobs/Android.bp
++++ b/keystore2/tests/legacy_blobs/Android.bp
+@@ -34,7 +34,6 @@ rust_test {
+         "libkeystore2_with_test_utils",
+         "libkeystore2_crypto_rust",
+         "android.system.keystore2-V2-rust",
+-        "android.hardware.security.keymint-V2-rust",
+         "android.security.maintenance-rust",
+         "android.security.authorization-rust",
+         "librustutils",
+@@ -47,5 +46,8 @@ rust_test {
+         "libserde",
+         "libthiserror",
+     ],
++    defaults: [
++        "keymint_use_latest_hal_aidl_rust",
++    ],
+     require_root: true,
+ }
+-- 
+2.38.1
+

@@ -1,4 +1,4 @@
-From 5b9bd3508bf234878ec8fe76c57a4ecf9efa2257 Mon Sep 17 00:00:00 2001
+From 736e6d8c9f511606598b2ef8a1acda8d07c3785c Mon Sep 17 00:00:00 2001
 From: Danny Lin <danny@kdrag0n.dev>
 Date: Tue, 5 Oct 2021 20:09:39 -0700
 Subject: [PATCH] InsetsStateController: Replace ArrayMap with HashMap for
@@ -114,10 +114,10 @@ Change-Id: Ic08d4c3e56cf10b322eabc115de441c6c5f4a898
  2 files changed, 16 insertions(+), 14 deletions(-)
 
 diff --git a/services/core/java/com/android/server/wm/InsetsPolicy.java b/services/core/java/com/android/server/wm/InsetsPolicy.java
-index 9e0d7b57264e..632794941dec 100644
+index 506396a932fe..92a017fc6299 100644
 --- a/services/core/java/com/android/server/wm/InsetsPolicy.java
 +++ b/services/core/java/com/android/server/wm/InsetsPolicy.java
-@@ -73,6 +73,8 @@ import com.android.internal.annotations.VisibleForTesting;
+@@ -75,6 +75,8 @@ import com.android.internal.annotations.VisibleForTesting;
  import com.android.server.DisplayThread;
  import com.android.server.statusbar.StatusBarManagerInternal;
  
@@ -126,33 +126,33 @@ index 9e0d7b57264e..632794941dec 100644
  /**
   * Policy that implements who gets control over the windows generating insets.
   */
-@@ -378,10 +380,9 @@ class InsetsPolicy {
- 
-             // IME needs different frames for certain cases (e.g. navigation bar in gesture nav).
-             if (type == ITYPE_IME) {
--                ArrayMap<Integer, WindowContainerInsetsSourceProvider> providers = mStateController
-+                HashMap<Integer, WindowContainerInsetsSourceProvider> providers = mStateController
-                         .getSourceProviders();
--                for (int i = providers.size() - 1; i >= 0; i--) {
--                    WindowContainerInsetsSourceProvider otherProvider = providers.valueAt(i);
-+                for (WindowContainerInsetsSourceProvider otherProvider : providers.values()) {
-                     if (otherProvider.overridesImeFrame()) {
-                         InsetsSource override =
-                                 new InsetsSource(
+@@ -380,10 +382,9 @@ class InsetsPolicy {
+                 state.removeSource(ITYPE_CAPTION_BAR);
+             }
+         }
+-        ArrayMap<Integer, WindowContainerInsetsSourceProvider> providers = mStateController
++        HashMap<Integer, WindowContainerInsetsSourceProvider> providers = mStateController
+                 .getSourceProviders();
+-        for (int i = providers.size() - 1; i >= 0; i--) {
+-            WindowContainerInsetsSourceProvider otherProvider = providers.valueAt(i);
++        for (WindowContainerInsetsSourceProvider otherProvider : providers.values()) {
+             if (otherProvider.overridesFrame(windowType)) {
+                 if (!stateCopied) {
+                     state = new InsetsState(state);
 diff --git a/services/core/java/com/android/server/wm/InsetsStateController.java b/services/core/java/com/android/server/wm/InsetsStateController.java
-index ed771c202c04..9c6679bec2da 100644
+index ac1fbc35325a..e59feec24d41 100644
 --- a/services/core/java/com/android/server/wm/InsetsStateController.java
 +++ b/services/core/java/com/android/server/wm/InsetsStateController.java
-@@ -44,6 +44,8 @@ import com.android.server.inputmethod.InputMethodManagerInternal;
- import java.io.PrintWriter;
+@@ -46,6 +46,8 @@ import java.io.PrintWriter;
  import java.util.ArrayList;
  import java.util.function.Consumer;
+ import java.util.function.Function;
 +import java.util.HashMap;
 +import java.util.Map;
  
  /**
   * Manages global window inset state in the system represented by {@link InsetsState}.
-@@ -54,8 +56,8 @@ class InsetsStateController {
+@@ -56,8 +58,8 @@ class InsetsStateController {
      private final InsetsState mState = new InsetsState();
      private final DisplayContent mDisplayContent;
  
@@ -163,7 +163,7 @@ index ed771c202c04..9c6679bec2da 100644
      private final ArrayMap<InsetsControlTarget, ArrayList<Integer>> mControlTargetTypeMap =
              new ArrayMap<>();
      private final SparseArray<InsetsControlTarget> mTypeControlTargetMap = new SparseArray<>();
-@@ -107,7 +109,7 @@ class InsetsStateController {
+@@ -118,7 +120,7 @@ class InsetsStateController {
          return result;
      }
  
@@ -172,7 +172,7 @@ index ed771c202c04..9c6679bec2da 100644
          return mProviders;
      }
  
-@@ -143,8 +145,8 @@ class InsetsStateController {
+@@ -146,8 +148,8 @@ class InsetsStateController {
       */
      void onPostLayout() {
          Trace.traceBegin(TRACE_TAG_WINDOW_MANAGER, "ISC.onPostLayout");
@@ -183,7 +183,7 @@ index ed771c202c04..9c6679bec2da 100644
          }
          if (!mLastState.equals(mState)) {
              mLastState.set(mState, true /* copySources */);
-@@ -192,8 +194,8 @@ class InsetsStateController {
+@@ -195,8 +197,8 @@ class InsetsStateController {
  
      void onInsetsModified(InsetsControlTarget caller) {
          boolean changed = false;
@@ -194,7 +194,7 @@ index ed771c202c04..9c6679bec2da 100644
          }
          if (changed) {
              notifyInsetsChanged();
-@@ -338,8 +340,7 @@ class InsetsStateController {
+@@ -341,8 +343,7 @@ class InsetsStateController {
              return;
          }
          mDisplayContent.mWmService.mAnimator.addAfterPrepareSurfacesRunnable(() -> {
@@ -204,7 +204,7 @@ index ed771c202c04..9c6679bec2da 100644
                  provider.onSurfaceTransactionApplied();
              }
              final ArraySet<InsetsControlTarget> newControlTargets = new ArraySet<>();
-@@ -378,8 +379,8 @@ class InsetsStateController {
+@@ -381,8 +382,8 @@ class InsetsStateController {
                      + mTypeControlTargetMap.valueAt(i));
          }
          pw.println(prefix + "InsetsSourceProviders:");
@@ -216,5 +216,5 @@ index ed771c202c04..9c6679bec2da 100644
      }
  }
 -- 
-2.37.3
+2.38.1
 

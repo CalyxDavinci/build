@@ -1,0 +1,491 @@
+From e8ecedb2ca5700c6709b03ecfe4ab81e56939930 Mon Sep 17 00:00:00 2001
+From: Rajesh Nyamagoud <nyamagoud@google.com>
+Date: Fri, 10 Dec 2021 00:33:15 +0000
+Subject: [PATCH 05/29] Adding test to create BACKEND_BUSY error
+
+Creates multiple child procs and creates opearations in it and
+parent proc waits for all child procs operations status, expects
+one or more opearations to fail with backeend busy error.
+
+Bug: 194359114
+Test: atest keystore2_client_test
+Change-Id: I52f95a7cfd031d80c88bfc2ca478a26572f40150
+---
+ keystore2/Android.bp                          |   4 +
+ keystore2/test_utils/authorizations.rs        |  10 ++
+ keystore2/test_utils/key_generations.rs       |  93 +++++++++---
+ keystore2/tests/Android.bp                    |  39 +++++
+ keystore2/tests/AndroidTest.xml               |  39 +++++
+ keystore2/tests/keystore2_client_tests.rs     | 140 ++++++++++++++++++
+ .../keystore2_legacy_blob_tests.rs            |  28 +++-
+ 7 files changed, 328 insertions(+), 25 deletions(-)
+ create mode 100644 keystore2/tests/Android.bp
+ create mode 100644 keystore2/tests/AndroidTest.xml
+ create mode 100644 keystore2/tests/keystore2_client_tests.rs
+
+diff --git a/keystore2/Android.bp b/keystore2/Android.bp
+index e6cb4fb5..43419b7d 100644
+--- a/keystore2/Android.bp
++++ b/keystore2/Android.bp
+@@ -89,6 +89,8 @@ rust_library {
+         "librand",
+         "libserde",
+         "libserde_cbor",
++	"libthiserror",
++	"libanyhow",
+     ],
+ }
+ 
+@@ -122,6 +124,8 @@ rust_test {
+         "librand",
+         "libserde",
+         "libserde_cbor",
++	"libthiserror",
++	"libanyhow",
+     ],
+ }
+ 
+diff --git a/keystore2/test_utils/authorizations.rs b/keystore2/test_utils/authorizations.rs
+index 4fbe1241..d5a7b7b1 100644
+--- a/keystore2/test_utils/authorizations.rs
++++ b/keystore2/test_utils/authorizations.rs
+@@ -22,6 +22,7 @@ use android_hardware_security_keymint::aidl::android::hardware::security::keymin
+ };
+ 
+ /// Helper struct to create set of Authorizations.
++#[derive(Debug, Clone, Eq, Hash, Ord, PartialEq, PartialOrd)]
+ pub struct AuthSetBuilder(Vec<KeyParameter>);
+ 
+ impl Default for AuthSetBuilder {
+@@ -77,6 +78,15 @@ impl AuthSetBuilder {
+         });
+         self
+     }
++
++    /// Add No_auth_required.
++    pub fn no_auth_required(mut self) -> Self {
++        self.0.push(KeyParameter {
++            tag: Tag::NO_AUTH_REQUIRED,
++            value: KeyParameterValue::BoolValue(true),
++        });
++        self
++    }
+ }
+ 
+ impl Deref for AuthSetBuilder {
+diff --git a/keystore2/test_utils/key_generations.rs b/keystore2/test_utils/key_generations.rs
+index f49aa9ff..d917fa1d 100644
+--- a/keystore2/test_utils/key_generations.rs
++++ b/keystore2/test_utils/key_generations.rs
+@@ -14,43 +14,94 @@
+ 
+ //! This module implements test utils to generate various types of keys.
+ 
++use anyhow::Result;
++
+ use android_hardware_security_keymint::aidl::android::hardware::security::keymint::{
+-    Algorithm::Algorithm, Digest::Digest, EcCurve::EcCurve, KeyPurpose::KeyPurpose,
++    Algorithm::Algorithm, Digest::Digest, EcCurve::EcCurve, ErrorCode::ErrorCode,
++    KeyPurpose::KeyPurpose,
+ };
+ use android_system_keystore2::aidl::android::system::keystore2::{
+     Domain::Domain, IKeystoreSecurityLevel::IKeystoreSecurityLevel, KeyDescriptor::KeyDescriptor,
+-    KeyMetadata::KeyMetadata,
++    KeyMetadata::KeyMetadata, ResponseCode::ResponseCode,
+ };
+ 
+ use crate::authorizations::AuthSetBuilder;
++use android_system_keystore2::binder::{ExceptionCode, Result as BinderResult};
++
++/// Shell namespace.
++pub const SELINUX_SHELL_NAMESPACE: i64 = 1;
+ 
+-const SELINUX_SHELL_NAMESPACE: i64 = 1;
++/// To map Keystore errors.
++#[derive(thiserror::Error, Debug, Eq, PartialEq)]
++pub enum Error {
++    /// Keystore2 error code
++    #[error("ResponseCode {0:?}")]
++    Rc(ResponseCode),
++    /// Keymint error code
++    #[error("ErrorCode {0:?}")]
++    Km(ErrorCode),
++    /// Exception
++    #[error("Binder exception {0:?}")]
++    Binder(ExceptionCode),
++}
++
++/// Keystore2 error mapping.
++pub fn map_ks_error<T>(r: BinderResult<T>) -> Result<T, Error> {
++    r.map_err(|s| {
++        match s.exception_code() {
++            ExceptionCode::SERVICE_SPECIFIC => {
++                match s.service_specific_error() {
++                    se if se < 0 => {
++                        // Negative service specific errors are KM error codes.
++                        Error::Km(ErrorCode(se))
++                    }
++                    se => {
++                        // Positive service specific errors are KS response codes.
++                        Error::Rc(ResponseCode(se))
++                    }
++                }
++            }
++            // We create `Error::Binder` to preserve the exception code
++            // for logging.
++            e_code => Error::Binder(e_code),
++        }
++    })
++}
+ 
+-/// Generate attested EC Key blob using given security level with below key parameters -
++/// Generate EC Key using given security level and domain with below key parameters and
++/// optionally allow the generated key to be attested with factory provisioned attest key using
++/// given challenge and application id -
+ ///     Purposes: SIGN and VERIFY
+ ///     Digest: SHA_2_256
+ ///     Curve: P_256
+-pub fn generate_ec_p256_signing_key_with_attestation(
++pub fn generate_ec_p256_signing_key(
+     sec_level: &binder::Strong<dyn IKeystoreSecurityLevel>,
++    domain: Domain,
++    nspace: i64,
++    alias: Option<String>,
++    att_challenge: Option<&[u8]>,
++    att_app_id: Option<&[u8]>,
+ ) -> binder::Result<KeyMetadata> {
+-    let att_challenge: &[u8] = b"foo";
+-    let att_app_id: &[u8] = b"bar";
+-    let gen_params = AuthSetBuilder::new()
++    let mut key_attest = false;
++    let mut gen_params = AuthSetBuilder::new()
+         .algorithm(Algorithm::EC)
+         .purpose(KeyPurpose::SIGN)
+         .purpose(KeyPurpose::VERIFY)
+         .digest(Digest::SHA_2_256)
+-        .ec_curve(EcCurve::P_256)
+-        .attestation_challenge(att_challenge.to_vec())
+-        .attestation_app_id(att_app_id.to_vec());
++        .ec_curve(EcCurve::P_256);
++
++    if let Some(challenge) = att_challenge {
++        key_attest = true;
++        gen_params = gen_params.clone().attestation_challenge(challenge.to_vec());
++    }
++
++    if let Some(app_id) = att_app_id {
++        key_attest = true;
++        gen_params = gen_params.clone().attestation_app_id(app_id.to_vec());
++    }
+ 
+     match sec_level.generateKey(
+-        &KeyDescriptor {
+-            domain: Domain::BLOB,
+-            nspace: SELINUX_SHELL_NAMESPACE,
+-            alias: None,
+-            blob: None,
+-        },
++        &KeyDescriptor { domain, nspace, alias, blob: None },
+         None,
+         &gen_params,
+         0,
+@@ -58,8 +109,12 @@ pub fn generate_ec_p256_signing_key_with_attestation(
+     ) {
+         Ok(key_metadata) => {
+             assert!(key_metadata.certificate.is_some());
+-            assert!(key_metadata.certificateChain.is_some());
+-            assert!(key_metadata.key.blob.is_some());
++            if key_attest {
++                assert!(key_metadata.certificateChain.is_some());
++            }
++            if domain == Domain::BLOB {
++                assert!(key_metadata.key.blob.is_some());
++            }
+ 
+             Ok(key_metadata)
+         }
+diff --git a/keystore2/tests/Android.bp b/keystore2/tests/Android.bp
+new file mode 100644
+index 00000000..21784a1d
+--- /dev/null
++++ b/keystore2/tests/Android.bp
+@@ -0,0 +1,39 @@
++// Copyright 2022, The Android Open Source Project
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++
++rust_test {
++    name: "keystore2_client_tests",
++    defaults: [
++        "keymint_use_latest_hal_aidl_rust",
++        "keystore2_use_latest_aidl_rust",
++    ],
++    srcs: ["keystore2_client_tests.rs"],
++    test_suites: [
++        "general-tests",
++    ],
++    test_config: "AndroidTest.xml",
++
++    rustlibs: [
++        "librustutils",
++        "libkeystore2_test_utils",
++        "libnix",
++        "libanyhow",
++        "libbinder_rs",
++        "liblazy_static",
++        "liblibc",
++        "libserde",
++        "libthiserror",
++    ],
++    require_root: true,
++}
+diff --git a/keystore2/tests/AndroidTest.xml b/keystore2/tests/AndroidTest.xml
+new file mode 100644
+index 00000000..7db36f7e
+--- /dev/null
++++ b/keystore2/tests/AndroidTest.xml
+@@ -0,0 +1,39 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!-- Copyright (C) 2022 The Android Open Source Project
++
++     Licensed under the Apache License, Version 2.0 (the "License");
++     you may not use this file except in compliance with the License.
++     You may obtain a copy of the License at
++
++          http://www.apache.org/licenses/LICENSE-2.0
++
++     Unless required by applicable law or agreed to in writing, software
++     distributed under the License is distributed on an "AS IS" BASIS,
++     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++     See the License for the specific language governing permissions and
++     limitations under the License.
++-->
++<configuration description="Config to run keystore2_client_tests device tests.">
++
++    <target_preparer class="com.android.tradefed.targetprep.RootTargetPreparer">
++    </target_preparer>
++
++    <target_preparer class="com.android.tradefed.targetprep.PushFilePreparer">
++        <option name="cleanup" value="true" />
++        <option
++            name="push"
++            value="keystore2_client_tests->/data/local/tmp/keystore2_client_tests"
++        />
++    </target_preparer>
++
++    <test class="com.android.tradefed.testtype.rust.RustBinaryTest" >
++        <option name="test-device-path" value="/data/local/tmp" />
++        <option name="module-name" value="keystore2_client_tests" />
++        <!-- When we run run multiple tests by default they run in parallel.
++          This will create issue as we create various child/user contexts
++          in a test leading to issues with IPC.
++          Serializing tests with below configuration to avoid IPC issues.
++        -->
++        <option name="native-test-flag" value="--test-threads=1" />
++    </test>
++</configuration>
+diff --git a/keystore2/tests/keystore2_client_tests.rs b/keystore2/tests/keystore2_client_tests.rs
+new file mode 100644
+index 00000000..246f2040
+--- /dev/null
++++ b/keystore2/tests/keystore2_client_tests.rs
+@@ -0,0 +1,140 @@
++// Copyright 2022, The Android Open Source Project
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++
++use nix::unistd::{getuid, Gid, Uid};
++use rustutils::users::AID_USER_OFFSET;
++use serde::{Deserialize, Serialize};
++
++use android_hardware_security_keymint::aidl::android::hardware::security::keymint::{
++    Digest::Digest, KeyPurpose::KeyPurpose, SecurityLevel::SecurityLevel,
++};
++use android_system_keystore2::aidl::android::system::keystore2::{
++    Domain::Domain, ResponseCode::ResponseCode,
++};
++
++use keystore2_test_utils::authorizations;
++use keystore2_test_utils::get_keystore_service;
++use keystore2_test_utils::key_generations;
++use keystore2_test_utils::run_as;
++
++#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
++enum TestOutcome {
++    Ok,
++    BackendBusy,
++}
++
++#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
++struct BarrierReached;
++
++fn create_op_run_as_child(
++    target_ctx: &'static str,
++    auid: Uid,
++    agid: Gid,
++    forced_op: bool,
++) -> run_as::ChildHandle<TestOutcome, BarrierReached> {
++    unsafe {
++        run_as::run_as_child(target_ctx, auid, agid, move |reader, writer| {
++            let keystore2 = get_keystore_service();
++            let sec_level = keystore2.getSecurityLevel(SecurityLevel::TRUSTED_ENVIRONMENT).unwrap();
++            let alias = format!("ks_prune_op_test_key_{}", getuid());
++            let key_metadata = key_generations::generate_ec_p256_signing_key(
++                &sec_level,
++                Domain::APP,
++                key_generations::SELINUX_SHELL_NAMESPACE,
++                Some(alias),
++                None,
++                None,
++            )
++            .unwrap();
++
++            let result = sec_level.createOperation(
++                &key_metadata.key,
++                &authorizations::AuthSetBuilder::new()
++                    .purpose(KeyPurpose::SIGN)
++                    .digest(Digest::SHA_2_256),
++                forced_op,
++            );
++
++            // At this point the result must be `BACKEND_BUSY` or `Ok`.
++            let outcome = match &result {
++                Ok(_) => TestOutcome::Ok,
++                Err(s) if s.service_specific_error() == ResponseCode::BACKEND_BUSY.0 => {
++                    TestOutcome::BackendBusy
++                }
++                Err(e) => panic!("createOperation returned unexpected err: {:?}", e),
++            };
++
++            // Let the parent know that an operation has been started, then
++            // wait until the parent notifies us to continue, so the operation
++            // remains open.
++            writer.send(&BarrierReached {});
++            reader.recv();
++
++            outcome
++        })
++        .expect("Failed to create child proc.")
++    }
++}
++
++fn create_operations(
++    target_ctx: &'static str,
++    forced_op: bool,
++    max_ops: i32,
++) -> Vec<run_as::ChildHandle<TestOutcome, BarrierReached>> {
++    let base_gid = 99 * AID_USER_OFFSET + 10001;
++    let base_uid = 99 * AID_USER_OFFSET + 10001;
++    (0..max_ops)
++        .into_iter()
++        .map(|i| {
++            create_op_run_as_child(
++                target_ctx,
++                Uid::from_raw(base_uid + (i as u32)),
++                Gid::from_raw(base_gid + (i as u32)),
++                forced_op,
++            )
++        })
++        .collect()
++}
++
++/// This test verifies that backend service throws BACKEND_BUSY error when all
++/// operations slots are full. This test creates operations in child processes and
++/// collects the status of operations performed in each child proc and determines
++/// whether any child proc exited with error status.
++#[test]
++fn keystore2_backend_busy_test() {
++    const MAX_OPS: i32 = 100;
++    static TARGET_CTX: &str = "u:r:untrusted_app:s0:c91,c256,c10,c20";
++    let forced_op = false;
++
++    let mut child_handles = create_operations(TARGET_CTX, forced_op, MAX_OPS);
++
++    // Wait until all child procs notifies us to continue,
++    // so that there are definitely enough operations outstanding to trigger a BACKEND_BUSY.
++    for ch in child_handles.iter_mut() {
++        ch.recv();
++    }
++    // Notify each child to resume and finish.
++    for ch in child_handles.iter_mut() {
++        ch.send(&BarrierReached {});
++    }
++
++    // Collect the result and validate whether backend busy has occurred.
++    let mut busy_count = 0;
++    for ch in child_handles.into_iter() {
++        if ch.get_result() == TestOutcome::BackendBusy {
++            busy_count += 1;
++        }
++    }
++    assert!(busy_count > 0)
++}
+diff --git a/keystore2/tests/legacy_blobs/keystore2_legacy_blob_tests.rs b/keystore2/tests/legacy_blobs/keystore2_legacy_blob_tests.rs
+index cf9f1a94..48275ae1 100644
+--- a/keystore2/tests/legacy_blobs/keystore2_legacy_blob_tests.rs
++++ b/keystore2/tests/legacy_blobs/keystore2_legacy_blob_tests.rs
+@@ -164,9 +164,17 @@ fn keystore2_encrypted_characteristics() -> anyhow::Result<()> {
+                 .getSecurityLevel(SecurityLevel::SecurityLevel::TRUSTED_ENVIRONMENT)
+                 .unwrap();
+             // Generate Key BLOB and prepare legacy keystore blob files.
+-            let key_metadata =
+-                key_generations::generate_ec_p256_signing_key_with_attestation(&sec_level)
+-                    .expect("Failed to generate key blob");
++            let att_challenge: &[u8] = b"foo";
++            let att_app_id: &[u8] = b"bar";
++            let key_metadata = key_generations::generate_ec_p256_signing_key(
++                &sec_level,
++                Domain::BLOB,
++                SELINUX_SHELL_NAMESPACE,
++                None,
++                Some(att_challenge),
++                Some(att_app_id),
++            )
++            .expect("Failed to generate key blob");
+ 
+             // Create keystore file layout for user_99.
+             let pw: Password = PASSWORD.into();
+@@ -415,9 +423,17 @@ fn keystore2_encrypted_certificates() -> anyhow::Result<()> {
+                 .getSecurityLevel(SecurityLevel::SecurityLevel::TRUSTED_ENVIRONMENT)
+                 .unwrap();
+             // Generate Key BLOB and prepare legacy keystore blob files.
+-            let key_metadata =
+-                key_generations::generate_ec_p256_signing_key_with_attestation(&sec_level)
+-                    .expect("Failed to generate key blob");
++            let att_challenge: &[u8] = b"foo";
++            let att_app_id: &[u8] = b"bar";
++            let key_metadata = key_generations::generate_ec_p256_signing_key(
++                &sec_level,
++                Domain::BLOB,
++                SELINUX_SHELL_NAMESPACE,
++                None,
++                Some(att_challenge),
++                Some(att_app_id),
++            )
++            .expect("Failed to generate key blob");
+ 
+             // Create keystore file layout for user_98.
+             let pw: Password = PASSWORD.into();
+-- 
+2.38.1
+

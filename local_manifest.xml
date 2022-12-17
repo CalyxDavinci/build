@@ -27,6 +27,8 @@
   <remove-project name="platform/external/rust/crates/argh_derive" />
   <remove-project name="platform/external/rust/crates/structopt-derive" />
   <remove-project name="platform/external/rust/cxx" />
+  <remove-project name="platform/external/rust/crates/once_cell" />
+  <remove-project name="platform/external/boringssl" />
 
   <!-- Rust is outdated, add much more recent one -->
   <remove-project name="platform/prebuilts/rust" />
@@ -69,6 +71,14 @@
   <project path="external/rust/crates/argh_derive" name="platform/external/rust/crates/argh_derive" remote="aosp" clone-depth="1" revision="master" />
   <project path="external/rust/crates/structopt-derive" name="platform/external/rust/crates/structopt-derive" remote="aosp" clone-depth="1" revision="master" />
   <project path="external/rust/cxx" name="platform/external/rust/cxx" remote="aosp" clone-depth="1" revision="4457dc4a5e5ab698eeb79672cdd3f8705cb31ac0" />
+
+  <!-- Required by tests in keystore2 -->
+  <project path="external/rust/crates/openssl" name="platform/external/rust/crates/openssl" remote="aosp" revision="master" />
+  <project path="external/rust/crates/foreign-types" name="platform/external/rust/crates/foreign-types" remote="aosp" revision="master" />
+  <project path="external/rust/crates/foreign-types-macros" name="platform/external/rust/crates/foreign-types-macros" remote="aosp" revision="master" />
+  <project path="external/rust/crates/foreign-types-shared" name="platform/external/rust/crates/foreign-types-shared" remote="aosp" revision="master" />
+  <project path="external/rust/crates/once_cell" name="platform/external/rust/crates/once_cell" remote="aosp" revision="master" />
+  <project path="external/boringssl" name="platform/external/boringssl" remote="aosp" revision="b9e46fc97b5fcb64f753fdba8e87cc50a819bae0" />
 
   <!-- Better default Camera app -->
   <project path="packages/apps/Aperture" name="LineageOS/android_packages_apps_Aperture" remote="calyxd-github" revision="lineage-20.0" />

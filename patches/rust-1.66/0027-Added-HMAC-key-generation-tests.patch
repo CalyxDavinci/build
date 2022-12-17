@@ -1,0 +1,451 @@
+From 56936b6128b4d0553c6f7a8dba3b5448b99e8bcc Mon Sep 17 00:00:00 2001
+From: Rajesh Nyamagoud <nyamagoud@google.com>
+Date: Thu, 3 Feb 2022 01:15:34 +0000
+Subject: [PATCH 20/29] Added HMAC key generation tests.
+
+- Generate HMAC keys with digest modes [SHA1, SHA_2_224, SHA_2_256,
+  SHA_2_384, SHA_2_512], should be able to create operations using
+  generated keys successfully.
+
+- Try to generate HAMC keys with key size in the range 0..513. For
+  invalid key size, key generation should fail with an error code
+  `UNSUPPORTED_KEY_SIZE`.
+
+- Generate HMAC keys with min-mac-lengths in the range 0..257. For
+  invalid min-mac-length, key generation should fail with an error
+  code `UNSUPPORTED_MIN_MAC_LENGTH`.
+
+- Try to generate HMAC key with multiple digest modes, key generation
+  should fail with an error code `UNSUPPORTED_DIGEST`.
+
+- Try to generate HMAC key without providing digest mode, key
+  generation should fail with an error code `UNSUPPORTED_DIGEST`.
+
+- Try to generate HMAC key with digest mode `NONE`, key
+  generation should fail with an error code `UNSUPPORTED_DIGEST`.
+
+- Generate HMAC key with min-mac-length of 128 bits and digests
+  [SHA1, SHA-2-224], try to create operations with mac-len greater than
+  digest lengths. Test should fail to create an operation with an error
+  code `UNSUPPORTED_MAC_LENGTH`.
+
+- Generate HMAC key with min-mac-length of 128 bits and digests
+  [SHA1, SHA-2-224], try to create operations with mac-len less than
+  min-mac-length. Test should fail to create an operation with an error
+  code `INVALID_MAC_LENGTH`.
+
+Bug: 194359114
+Test: atest keystore2_client_test
+Change-Id: I594c9718b0f6a67f2655faca4bf100abf2ced3a3
+---
+ keystore2/test_utils/key_generations.rs       |  39 +++
+ .../tests/keystore2_client_hmac_key_tests.rs  | 305 ++++++++++++++++++
+ .../keystore2_client_list_entries_tests.rs    |   6 +-
+ keystore2/tests/keystore2_client_tests.rs     |   1 +
+ 4 files changed, 348 insertions(+), 3 deletions(-)
+ create mode 100644 keystore2/tests/keystore2_client_hmac_key_tests.rs
+
+diff --git a/keystore2/test_utils/key_generations.rs b/keystore2/test_utils/key_generations.rs
+index c25d9280..17d89146 100644
+--- a/keystore2/test_utils/key_generations.rs
++++ b/keystore2/test_utils/key_generations.rs
+@@ -297,3 +297,42 @@ pub fn generate_sym_key(
+     assert!(key_metadata.certificateChain.is_none());
+     Ok(key_metadata)
+ }
++
++/// Generate HMAC key.
++pub fn generate_hmac_key(
++    sec_level: &binder::Strong<dyn IKeystoreSecurityLevel>,
++    alias: &str,
++    key_size: i32,
++    min_mac_len: i32,
++    digest: Digest,
++) -> binder::Result<KeyMetadata> {
++    let gen_params = AuthSetBuilder::new()
++        .no_auth_required()
++        .algorithm(Algorithm::HMAC)
++        .purpose(KeyPurpose::SIGN)
++        .purpose(KeyPurpose::VERIFY)
++        .key_size(key_size)
++        .min_mac_length(min_mac_len)
++        .digest(digest);
++
++    let key_metadata = sec_level.generateKey(
++        &KeyDescriptor {
++            domain: Domain::APP,
++            nspace: -1,
++            alias: Some(alias.to_string()),
++            blob: None,
++        },
++        None,
++        &gen_params,
++        0,
++        b"entropy",
++    )?;
++
++    // Should not have public certificate.
++    assert!(key_metadata.certificate.is_none());
++
++    // Should not have an attestation record.
++    assert!(key_metadata.certificateChain.is_none());
++
++    Ok(key_metadata)
++}
+diff --git a/keystore2/tests/keystore2_client_hmac_key_tests.rs b/keystore2/tests/keystore2_client_hmac_key_tests.rs
+new file mode 100644
+index 00000000..6bb80017
+--- /dev/null
++++ b/keystore2/tests/keystore2_client_hmac_key_tests.rs
+@@ -0,0 +1,305 @@
++// Copyright 2022, The Android Open Source Project
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++
++use android_hardware_security_keymint::aidl::android::hardware::security::keymint::{
++    Algorithm::Algorithm, Digest::Digest, ErrorCode::ErrorCode, KeyPurpose::KeyPurpose,
++    SecurityLevel::SecurityLevel,
++};
++use android_system_keystore2::aidl::android::system::keystore2::{
++    Domain::Domain, IKeystoreSecurityLevel::IKeystoreSecurityLevel, KeyDescriptor::KeyDescriptor,
++};
++
++use keystore2_test_utils::{
++    authorizations, get_keystore_service, key_generations, key_generations::Error,
++};
++
++use crate::keystore2_client_test_utils::perform_sample_sign_operation;
++
++/// Generate HMAC key with given parameters and perform a sample operation using generated key.
++fn create_hmac_key_and_operation(
++    sec_level: &binder::Strong<dyn IKeystoreSecurityLevel>,
++    alias: &str,
++    key_size: i32,
++    mac_len: i32,
++    min_mac_len: i32,
++    digest: Digest,
++) -> Result<(), binder::Status> {
++    let key_metadata =
++        key_generations::generate_hmac_key(sec_level, alias, key_size, min_mac_len, digest)?;
++
++    let op_response = sec_level.createOperation(
++        &key_metadata.key,
++        &authorizations::AuthSetBuilder::new()
++            .purpose(KeyPurpose::SIGN)
++            .digest(digest)
++            .mac_length(mac_len),
++        false,
++    )?;
++
++    assert!(op_response.iOperation.is_some());
++    assert_eq!(
++        Ok(()),
++        key_generations::map_ks_error(perform_sample_sign_operation(
++            &op_response.iOperation.unwrap()
++        ))
++    );
++
++    Ok(())
++}
++
++/// Generate HMAC keys with various digest modes [SHA1, SHA_2_224, SHA_2_256, SHA_2_384,
++/// SHA_2_512]. Create an operation using generated keys. Test should create operations
++/// successfully.
++#[test]
++fn keystore2_hmac_key_op_success() {
++    let digests =
++        [Digest::SHA1, Digest::SHA_2_224, Digest::SHA_2_256, Digest::SHA_2_384, Digest::SHA_2_512];
++    let min_mac_len = 128;
++    let mac_len = 128;
++    let key_size = 128;
++
++    let keystore2 = get_keystore_service();
++    let sec_level = keystore2.getSecurityLevel(SecurityLevel::TRUSTED_ENVIRONMENT).unwrap();
++
++    for digest in digests {
++        let alias = format!("ks_hmac_test_key_{}", digest.0);
++
++        assert_eq!(
++            Ok(()),
++            create_hmac_key_and_operation(
++                &sec_level,
++                &alias,
++                key_size,
++                mac_len,
++                min_mac_len,
++                digest,
++            )
++        );
++    }
++}
++
++/// Generate HMAC keys with various key lengths. For invalid key sizes, key generation
++/// should fail with an error code `UNSUPPORTED_KEY_SIZE`.
++#[test]
++fn keystore2_hmac_gen_keys_fails_expect_unsupported_key_size() {
++    let min_mac_len = 256;
++    let digest = Digest::SHA_2_256;
++
++    let keystore2 = get_keystore_service();
++    let sec_level = keystore2.getSecurityLevel(SecurityLevel::TRUSTED_ENVIRONMENT).unwrap();
++
++    for key_size in 0..513 {
++        let alias = format!("ks_hmac_test_key_{}", key_size);
++        let result = key_generations::map_ks_error(key_generations::generate_hmac_key(
++            &sec_level,
++            &alias,
++            key_size,
++            min_mac_len,
++            digest,
++        ));
++
++        match result {
++            Ok(_) => {
++                assert!((key_size >= 64 && key_size % 8 == 0));
++            }
++            Err(e) => {
++                assert_eq!(e, Error::Km(ErrorCode::UNSUPPORTED_KEY_SIZE));
++                assert!((key_size < 64 || key_size % 8 != 0), "Unsupported KeySize: {}", key_size);
++            }
++        }
++    }
++}
++
++/// Generate HMAC keys with various min-mac-lengths. For invalid min-mac-length, key generation
++/// should fail with an error code `UNSUPPORTED_MIN_MAC_LENGTH`.
++#[test]
++fn keystore2_hmac_gen_keys_fails_expect_unsupported_min_mac_length() {
++    let digest = Digest::SHA_2_256;
++    let key_size = 128;
++
++    let keystore2 = get_keystore_service();
++    let sec_level = keystore2.getSecurityLevel(SecurityLevel::TRUSTED_ENVIRONMENT).unwrap();
++
++    for min_mac_len in 0..257 {
++        let alias = format!("ks_hmac_test_key_mml_{}", min_mac_len);
++        match key_generations::map_ks_error(key_generations::generate_hmac_key(
++            &sec_level,
++            &alias,
++            key_size,
++            min_mac_len,
++            digest,
++        )) {
++            Ok(_) => {
++                assert!((min_mac_len >= 64 && min_mac_len % 8 == 0));
++            }
++            Err(e) => {
++                assert_eq!(e, Error::Km(ErrorCode::UNSUPPORTED_MIN_MAC_LENGTH));
++                assert!(
++                    (min_mac_len < 64 || min_mac_len % 8 != 0),
++                    "Unsupported MinMacLength: {}",
++                    min_mac_len
++                );
++            }
++        }
++    }
++}
++
++/// Try to generate HMAC key with multiple digests in key authorizations list.
++/// Test fails to generate a key with multiple digests with an error code `UNSUPPORTED_DIGEST`.
++#[test]
++fn keystore2_hmac_gen_key_multi_digests_fails_expect_unsupported_digest() {
++    let keystore2 = get_keystore_service();
++    let sec_level = keystore2.getSecurityLevel(SecurityLevel::TRUSTED_ENVIRONMENT).unwrap();
++
++    let alias = "ks_hmac_test_key_multi_dig";
++    let gen_params = authorizations::AuthSetBuilder::new()
++        .no_auth_required()
++        .algorithm(Algorithm::HMAC)
++        .purpose(KeyPurpose::SIGN)
++        .purpose(KeyPurpose::VERIFY)
++        .key_size(128)
++        .min_mac_length(128)
++        .digest(Digest::SHA1)
++        .digest(Digest::SHA_2_256);
++
++    let result = key_generations::map_ks_error(sec_level.generateKey(
++        &KeyDescriptor {
++            domain: Domain::APP,
++            nspace: -1,
++            alias: Some(alias.to_string()),
++            blob: None,
++        },
++        None,
++        &gen_params,
++        0,
++        b"entropy",
++    ));
++    assert!(result.is_err());
++    assert_eq!(Error::Km(ErrorCode::UNSUPPORTED_DIGEST), result.unwrap_err());
++}
++
++/// Try to generate HMAC key without providing digest mode. HMAC key generation with
++/// no digest should fail with an error code `UNSUPPORTED_DIGEST`.
++#[test]
++fn keystore2_hmac_gen_key_no_digests_fails_expect_unsupported_digest() {
++    let keystore2 = get_keystore_service();
++    let sec_level = keystore2.getSecurityLevel(SecurityLevel::TRUSTED_ENVIRONMENT).unwrap();
++
++    let alias = "ks_hmac_test_key_no_dig";
++    let gen_params = authorizations::AuthSetBuilder::new()
++        .no_auth_required()
++        .algorithm(Algorithm::HMAC)
++        .purpose(KeyPurpose::SIGN)
++        .purpose(KeyPurpose::VERIFY)
++        .key_size(128)
++        .min_mac_length(128);
++
++    let result = key_generations::map_ks_error(sec_level.generateKey(
++        &KeyDescriptor {
++            domain: Domain::APP,
++            nspace: -1,
++            alias: Some(alias.to_string()),
++            blob: None,
++        },
++        None,
++        &gen_params,
++        0,
++        b"entropy",
++    ));
++    assert!(result.is_err());
++    assert_eq!(Error::Km(ErrorCode::UNSUPPORTED_DIGEST), result.unwrap_err());
++}
++
++/// Try to generate a HMAC key with NONE digest mode, it should fail with `UNSUPPORTED_DIGEST`
++/// error code.
++#[test]
++fn keystore2_hmac_gen_key_with_none_digest_fails_expect_unsupported_digest() {
++    let min_mac_len = 128;
++    let key_size = 128;
++    let keystore2 = get_keystore_service();
++    let sec_level = keystore2.getSecurityLevel(SecurityLevel::TRUSTED_ENVIRONMENT).unwrap();
++
++    let alias = "ks_hmac_test_key_fail";
++    let result = key_generations::map_ks_error(key_generations::generate_hmac_key(
++        &sec_level,
++        alias,
++        key_size,
++        min_mac_len,
++        Digest::NONE,
++    ));
++    assert!(result.is_err());
++    assert_eq!(Error::Km(ErrorCode::UNSUPPORTED_DIGEST), result.unwrap_err());
++}
++
++/// Generate HMAC key with min-mac-len of 128 bits for the digest modes Digest::SHA1 and
++/// Digest::SHA_2_224. Try to create an operation with generated key and mac-length greater than
++/// digest length. Test should fail to create an operation with an error code
++/// `UNSUPPORTED_MAC_LENGTH`.
++#[test]
++fn keystore2_hmac_key_op_with_mac_len_greater_than_digest_len_fail() {
++    let digests = [Digest::SHA1, Digest::SHA_2_224];
++    let min_mac_len = 128;
++    let mac_len = 256;
++    let key_size = 128;
++
++    let keystore2 = get_keystore_service();
++    let sec_level = keystore2.getSecurityLevel(SecurityLevel::TRUSTED_ENVIRONMENT).unwrap();
++
++    for digest in digests {
++        let alias = format!("ks_hmac_test_key_{}", digest.0);
++
++        let result = key_generations::map_ks_error(create_hmac_key_and_operation(
++            &sec_level,
++            &alias,
++            key_size,
++            mac_len,
++            min_mac_len,
++            digest,
++        ));
++
++        assert!(result.is_err());
++        assert_eq!(Error::Km(ErrorCode::UNSUPPORTED_MAC_LENGTH), result.unwrap_err());
++    }
++}
++
++/// Generate HMAC key with min-mac-len of 128 bits for the digest modes Digest::SHA1 and
++/// Digest::SHA_2_224. Try to create an operation with generated key and mac-length less than
++/// min-mac-length. Test should fail to create an operation with an error code
++/// `INVALID_MAC_LENGTH`.
++#[test]
++fn keystore2_hmac_key_op_with_mac_len_less_than_min_mac_len_fail() {
++    let digests = [Digest::SHA1, Digest::SHA_2_224];
++    let min_mac_len = 128;
++    let mac_len = 64;
++    let key_size = 128;
++
++    let keystore2 = get_keystore_service();
++    let sec_level = keystore2.getSecurityLevel(SecurityLevel::TRUSTED_ENVIRONMENT).unwrap();
++
++    for digest in digests {
++        let alias = format!("ks_hmac_test_key_{}", digest.0);
++
++        let result = key_generations::map_ks_error(create_hmac_key_and_operation(
++            &sec_level,
++            &alias,
++            key_size,
++            mac_len,
++            min_mac_len,
++            digest,
++        ));
++
++        assert!(result.is_err());
++        assert_eq!(Error::Km(ErrorCode::INVALID_MAC_LENGTH), result.unwrap_err());
++    }
++}
+diff --git a/keystore2/tests/keystore2_client_list_entries_tests.rs b/keystore2/tests/keystore2_client_list_entries_tests.rs
+index d50ef5c3..def9d948 100644
+--- a/keystore2/tests/keystore2_client_list_entries_tests.rs
++++ b/keystore2/tests/keystore2_client_list_entries_tests.rs
+@@ -24,7 +24,7 @@ use android_system_keystore2::aidl::android::system::keystore2::{
+ use keystore2_test_utils::{get_keystore_service, key_generations, key_generations::Error, run_as};
+ 
+ /// Try to find a key with given key parameters using `listEntries` API.
+-fn is_key_alias_exist(
++fn key_alias_exists(
+     keystore2: &binder::Strong<dyn IKeystoreService>,
+     domain: Domain,
+     nspace: i64,
+@@ -66,7 +66,7 @@ fn keystore2_list_entries_success() {
+ 
+             // Make sure there is no key exist with this `alias` in `SELINUX` domain and
+             // `SELINUX_SHELL_NAMESPACE` namespace.
+-            if is_key_alias_exist(
++            if key_alias_exists(
+                 &keystore2,
+                 Domain::SELINUX,
+                 key_generations::SELINUX_SHELL_NAMESPACE,
+@@ -95,7 +95,7 @@ fn keystore2_list_entries_success() {
+ 
+             // Verify that above generated key entry is listed with domain SELINUX and
+             // namespace SELINUX_SHELL_NAMESPACE
+-            assert!(is_key_alias_exist(
++            assert!(key_alias_exists(
+                 &keystore2,
+                 Domain::SELINUX,
+                 key_generations::SELINUX_SHELL_NAMESPACE,
+diff --git a/keystore2/tests/keystore2_client_tests.rs b/keystore2/tests/keystore2_client_tests.rs
+index 734faf61..b2257edc 100644
+--- a/keystore2/tests/keystore2_client_tests.rs
++++ b/keystore2/tests/keystore2_client_tests.rs
+@@ -16,6 +16,7 @@ pub mod keystore2_client_3des_key_tests;
+ pub mod keystore2_client_aes_key_tests;
+ pub mod keystore2_client_ec_key_tests;
+ pub mod keystore2_client_grant_key_tests;
++pub mod keystore2_client_hmac_key_tests;
+ pub mod keystore2_client_key_id_domain_tests;
+ pub mod keystore2_client_list_entries_tests;
+ pub mod keystore2_client_operation_tests;
+-- 
+2.38.1
+

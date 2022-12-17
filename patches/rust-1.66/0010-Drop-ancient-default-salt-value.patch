@@ -1,0 +1,212 @@
+From ff9e83968999345136058d354f75be0f9b461577 Mon Sep 17 00:00:00 2001
+From: David Drysdale <drysdale@google.com>
+Date: Tue, 19 Apr 2022 08:11:18 +0100
+Subject: [PATCH 03/29] Drop ancient default salt value
+
+A value for the salt is present in all code paths:
+
+- All callers of `Password::derive_key` pass a `Some(..)` value for the
+  salt.  Remove this `Some` everywhere and...
+- Change the signature of `derive_key` to expect a `&[u8]` for `salt`
+  rather than an `Option<&[u8]>`.
+- `Password::derive_key` is the only caller of `generateKeyFromPassword`
+  (via bindgen to C++-land), so...
+- Make it clear that the C++ `generateKeyFromPassword()` function
+  expects 16 bytes of `salt`.
+
+Bug: 172121323
+Test: compile, TreeHugger
+Change-Id: I41966cce96b5371785680c13bacfc5f95969372a
+---
+ keystore2/src/crypto/crypto.cpp               | 12 +---------
+ keystore2/src/crypto/crypto.hpp               |  1 +
+ keystore2/src/crypto/lib.rs                   | 24 +++++++------------
+ keystore2/src/legacy_blob.rs                  |  8 +++----
+ keystore2/src/super_key.rs                    |  4 ++--
+ .../keystore2_legacy_blob_tests.rs            |  4 ++--
+ 6 files changed, 18 insertions(+), 35 deletions(-)
+
+diff --git a/keystore2/src/crypto/crypto.cpp b/keystore2/src/crypto/crypto.cpp
+index 34a9a403..6de3be7f 100644
+--- a/keystore2/src/crypto/crypto.cpp
++++ b/keystore2/src/crypto/crypto.cpp
+@@ -192,16 +192,6 @@ static constexpr size_t SALT_SIZE = 16;
+ 
+ void generateKeyFromPassword(uint8_t* key, size_t key_len, const char* pw, size_t pw_len,
+                              const uint8_t* salt) {
+-    size_t saltSize;
+-    if (salt != nullptr) {
+-        saltSize = SALT_SIZE;
+-    } else {
+-        // Pre-gingerbread used this hardwired salt, readMasterKey will rewrite these when found
+-        salt = reinterpret_cast<const uint8_t*>("keystore");
+-        // sizeof = 9, not strlen = 8
+-        saltSize = sizeof("keystore");
+-    }
+-
+     const EVP_MD* digest = EVP_sha256();
+ 
+     // SHA1 was used prior to increasing the key size
+@@ -209,7 +199,7 @@ void generateKeyFromPassword(uint8_t* key, size_t key_len, const char* pw, size_
+         digest = EVP_sha1();
+     }
+ 
+-    PKCS5_PBKDF2_HMAC(pw, pw_len, salt, saltSize, 8192, digest, key_len, key);
++    PKCS5_PBKDF2_HMAC(pw, pw_len, salt, SALT_SIZE, 8192, digest, key_len, key);
+ }
+ 
+ // New code.
+diff --git a/keystore2/src/crypto/crypto.hpp b/keystore2/src/crypto/crypto.hpp
+index d66532f7..4a161e6c 100644
+--- a/keystore2/src/crypto/crypto.hpp
++++ b/keystore2/src/crypto/crypto.hpp
+@@ -36,6 +36,7 @@ extern "C" {
+ 
+   bool CreateKeyId(const uint8_t* key_blob, size_t len, km_id_t* out_id);
+ 
++  // The salt parameter must be non-nullptr and point to 16 bytes of data.
+   void generateKeyFromPassword(uint8_t* key, size_t key_len, const char* pw,
+                                size_t pw_len, const uint8_t* salt);
+ 
+diff --git a/keystore2/src/crypto/lib.rs b/keystore2/src/crypto/lib.rs
+index 54e19483..7ba47c88 100644
+--- a/keystore2/src/crypto/lib.rs
++++ b/keystore2/src/crypto/lib.rs
+@@ -197,24 +197,16 @@ impl<'a> Password<'a> {
+     /// Generate a key from the given password and salt.
+     /// The salt must be exactly 16 bytes long.
+     /// Two key sizes are accepted: 16 and 32 bytes.
+-    pub fn derive_key(&self, salt: Option<&[u8]>, key_length: usize) -> Result<ZVec, Error> {
+-        let pw = self.get_key();
+-
+-        let salt: *const u8 = match salt {
+-            Some(s) => {
+-                if s.len() != SALT_LENGTH {
+-                    return Err(Error::InvalidSaltLength);
+-                }
+-                s.as_ptr()
+-            }
+-            None => std::ptr::null(),
+-        };
+-
++    pub fn derive_key(&self, salt: &[u8], key_length: usize) -> Result<ZVec, Error> {
++        if salt.len() != SALT_LENGTH {
++            return Err(Error::InvalidSaltLength);
++        }
+         match key_length {
+             AES_128_KEY_LENGTH | AES_256_KEY_LENGTH => {}
+             _ => return Err(Error::InvalidKeyLength),
+         }
+ 
++        let pw = self.get_key();
+         let mut result = ZVec::new(key_length)?;
+ 
+         unsafe {
+@@ -223,7 +215,7 @@ impl<'a> Password<'a> {
+                 result.len(),
+                 pw.as_ptr() as *const std::os::raw::c_char,
+                 pw.len(),
+-                salt,
++                salt.as_ptr(),
+             )
+         };
+ 
+@@ -541,9 +533,9 @@ mod tests {
+     fn test_generate_key_from_password() {
+         let mut key = vec![0; 16];
+         let pw = vec![0; 16];
+-        let mut salt = vec![0; 16];
++        let salt = vec![0; 16];
+         unsafe {
+-            generateKeyFromPassword(key.as_mut_ptr(), 16, pw.as_ptr(), 16, salt.as_mut_ptr());
++            generateKeyFromPassword(key.as_mut_ptr(), 16, pw.as_ptr(), 16, salt.as_ptr());
+         }
+         assert_ne!(key, vec![0; 16]);
+     }
+diff --git a/keystore2/src/legacy_blob.rs b/keystore2/src/legacy_blob.rs
+index d75bfd2c..1c43a040 100644
+--- a/keystore2/src/legacy_blob.rs
++++ b/keystore2/src/legacy_blob.rs
+@@ -1348,7 +1348,7 @@ impl LegacyBlobLoader {
+                 Blob { flags, value: BlobValue::PwEncrypted { iv, tag, data, salt, key_size } } => {
+                     if (flags & flags::ENCRYPTED) != 0 {
+                         let key = pw
+-                            .derive_key(Some(&salt), key_size)
++                            .derive_key(&salt, key_size)
+                             .context("In load_super_key: Failed to derive key from password.")?;
+                         let blob = aes_gcm_decrypt(&data, &iv, &tag, &key).context(
+                             "In load_super_key: while trying to decrypt legacy super key blob.",
+@@ -1993,7 +1993,7 @@ mod test {
+         std::fs::create_dir(&*temp_dir.build().push("user_0")).unwrap();
+ 
+         let pw: Password = PASSWORD.into();
+-        let pw_key = TestKey(pw.derive_key(Some(SUPERKEY_SALT), 32).unwrap());
++        let pw_key = TestKey(pw.derive_key(SUPERKEY_SALT, 32).unwrap());
+         let super_key =
+             Arc::new(TestKey(pw_key.decrypt(SUPERKEY_PAYLOAD, SUPERKEY_IV, SUPERKEY_TAG).unwrap()));
+ 
+@@ -2080,7 +2080,7 @@ mod test {
+         std::fs::create_dir(&*temp_dir.build().push("user_0")).unwrap();
+ 
+         let pw: Password = PASSWORD.into();
+-        let pw_key = TestKey(pw.derive_key(Some(SUPERKEY_SALT), 32).unwrap());
++        let pw_key = TestKey(pw.derive_key(SUPERKEY_SALT, 32).unwrap());
+         let super_key =
+             Arc::new(TestKey(pw_key.decrypt(SUPERKEY_PAYLOAD, SUPERKEY_IV, SUPERKEY_TAG).unwrap()));
+ 
+@@ -2168,7 +2168,7 @@ mod test {
+         std::fs::create_dir(&*temp_dir.build().push("user_0")).unwrap();
+ 
+         let pw: Password = PASSWORD.into();
+-        let pw_key = TestKey(pw.derive_key(Some(SUPERKEY_SALT), 32).unwrap());
++        let pw_key = TestKey(pw.derive_key(SUPERKEY_SALT, 32).unwrap());
+         let super_key =
+             Arc::new(TestKey(pw_key.decrypt(SUPERKEY_PAYLOAD, SUPERKEY_IV, SUPERKEY_TAG).unwrap()));
+ 
+diff --git a/keystore2/src/super_key.rs b/keystore2/src/super_key.rs
+index 74e3e560..dd22d8bb 100644
+--- a/keystore2/src/super_key.rs
++++ b/keystore2/src/super_key.rs
+@@ -646,7 +646,7 @@ impl SuperKeyManager {
+             ) {
+                 (Some(&EncryptedBy::Password), Some(salt), Some(iv), Some(tag)) => {
+                     // Note that password encryption is AES no matter the value of algorithm.
+-                    let key = pw.derive_key(Some(salt), AES_256_KEY_LENGTH).context(
++                    let key = pw.derive_key(salt, AES_256_KEY_LENGTH).context(
+                         "In extract_super_key_from_key_entry: Failed to generate key from password.",
+                     )?;
+ 
+@@ -686,7 +686,7 @@ impl SuperKeyManager {
+     ) -> Result<(Vec<u8>, BlobMetaData)> {
+         let salt = generate_salt().context("In encrypt_with_password: Failed to generate salt.")?;
+         let derived_key = pw
+-            .derive_key(Some(&salt), AES_256_KEY_LENGTH)
++            .derive_key(&salt, AES_256_KEY_LENGTH)
+             .context("In encrypt_with_password: Failed to derive password.")?;
+         let mut metadata = BlobMetaData::new();
+         metadata.add(BlobMetaEntry::EncryptedBy(EncryptedBy::Password));
+diff --git a/keystore2/tests/legacy_blobs/keystore2_legacy_blob_tests.rs b/keystore2/tests/legacy_blobs/keystore2_legacy_blob_tests.rs
+index 6def39e2..cf9f1a94 100644
+--- a/keystore2/tests/legacy_blobs/keystore2_legacy_blob_tests.rs
++++ b/keystore2/tests/legacy_blobs/keystore2_legacy_blob_tests.rs
+@@ -170,7 +170,7 @@ fn keystore2_encrypted_characteristics() -> anyhow::Result<()> {
+ 
+             // Create keystore file layout for user_99.
+             let pw: Password = PASSWORD.into();
+-            let pw_key = TestKey(pw.derive_key(Some(SUPERKEY_SALT), 32).unwrap());
++            let pw_key = TestKey(pw.derive_key(SUPERKEY_SALT, 32).unwrap());
+             let super_key =
+                 TestKey(pw_key.decrypt(SUPERKEY_PAYLOAD, SUPERKEY_IV, SUPERKEY_TAG).unwrap());
+ 
+@@ -421,7 +421,7 @@ fn keystore2_encrypted_certificates() -> anyhow::Result<()> {
+ 
+             // Create keystore file layout for user_98.
+             let pw: Password = PASSWORD.into();
+-            let pw_key = TestKey(pw.derive_key(Some(SUPERKEY_SALT), 32).unwrap());
++            let pw_key = TestKey(pw.derive_key(SUPERKEY_SALT, 32).unwrap());
+             let super_key =
+                 TestKey(pw_key.decrypt(SUPERKEY_PAYLOAD, SUPERKEY_IV, SUPERKEY_TAG).unwrap());
+ 
+-- 
+2.38.1
+

@@ -1,7 +1,7 @@
-From 5068b16908e800f3bbc1da71a7f5e005af2b30fd Mon Sep 17 00:00:00 2001
+From 031e85448552a485cc7194fb4b6ca24106dde2eb Mon Sep 17 00:00:00 2001
 From: Jens Reidel <adrian@travitia.xyz>
 Date: Mon, 26 Sep 2022 23:18:55 +0300
-Subject: [PATCH] build: Update Rust to 1.65
+Subject: [PATCH] build: Update Rust to 1.66
 
 Change-Id: I4604533b6661c8d9fa3058f17427dc6f6da07083
 ---
@@ -9,7 +9,7 @@ Change-Id: I4604533b6661c8d9fa3058f17427dc6f6da07083
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/rust/config/global.go b/rust/config/global.go
-index 2d5fa991b..84c686ae8 100644
+index 2d5fa991b..7783f72f0 100644
 --- a/rust/config/global.go
 +++ b/rust/config/global.go
 @@ -24,7 +24,7 @@ import (
@@ -17,7 +17,7 @@ index 2d5fa991b..84c686ae8 100644
  
  var (
 -	RustDefaultVersion = "1.59.0"
-+	RustDefaultVersion = "1.65.0"
++	RustDefaultVersion = "1.66.0"
  	RustDefaultBase    = "prebuilts/rust/"
  	DefaultEdition     = "2021"
  	Stdlibs            = []string{

@@ -1,0 +1,376 @@
+From 7e739e2ac75bc4829a353bacb6ecff373d2837f6 Mon Sep 17 00:00:00 2001
+From: Rajesh Nyamagoud <nyamagoud@google.com>
+Date: Fri, 5 Aug 2022 17:38:25 +0000
+Subject: [PATCH 19/29] Added tests using 3DES algorithm.
+
+- Generate 3DES keys with block modes [ECB, CBC] and padding modes
+  [NONE, PKCS7]. Should be able to create operations successfully
+  with these generated keys.
+
+- Try to generate a key and create an operation with invalid inputs, it
+  should fail with proper error codes
+  - with unsupported key size
+  - with unsupported padding mode
+  - with padding mode NONE and input text whose length isn't a
+    multiple of the DES block size
+  - with unsupported blockmode
+
+Bug: 194359114
+Test: atest keystore2_client_test
+Change-Id: Ida98fd2e6f9b7ba84b8beba9ea979d5aeb2240ee
+---
+ keystore2/test_utils/key_generations.rs       |   7 +-
+ .../tests/keystore2_client_3des_key_tests.rs  | 218 ++++++++++++++++++
+ .../tests/keystore2_client_aes_key_tests.rs   |  18 +-
+ .../tests/keystore2_client_test_utils.rs      |   1 +
+ keystore2/tests/keystore2_client_tests.rs     |   1 +
+ 5 files changed, 236 insertions(+), 9 deletions(-)
+ create mode 100644 keystore2/tests/keystore2_client_3des_key_tests.rs
+
+diff --git a/keystore2/test_utils/key_generations.rs b/keystore2/test_utils/key_generations.rs
+index 047df284..c25d9280 100644
+--- a/keystore2/test_utils/key_generations.rs
++++ b/keystore2/test_utils/key_generations.rs
+@@ -254,9 +254,10 @@ pub fn generate_rsa_key(
+     Ok(key_metadata)
+ }
+ 
+-/// Generate AES key.
+-pub fn generate_aes_key(
++/// Generate AES/3DES key.
++pub fn generate_sym_key(
+     sec_level: &binder::Strong<dyn IKeystoreSecurityLevel>,
++    algorithm: Algorithm,
+     size: i32,
+     alias: &str,
+     padding_mode: &PaddingMode,
+@@ -265,7 +266,7 @@ pub fn generate_aes_key(
+ ) -> binder::Result<KeyMetadata> {
+     let mut gen_params = AuthSetBuilder::new()
+         .no_auth_required()
+-        .algorithm(Algorithm::AES)
++        .algorithm(algorithm)
+         .purpose(KeyPurpose::ENCRYPT)
+         .purpose(KeyPurpose::DECRYPT)
+         .key_size(size)
+diff --git a/keystore2/tests/keystore2_client_3des_key_tests.rs b/keystore2/tests/keystore2_client_3des_key_tests.rs
+new file mode 100644
+index 00000000..eda24db0
+--- /dev/null
++++ b/keystore2/tests/keystore2_client_3des_key_tests.rs
+@@ -0,0 +1,218 @@
++// Copyright 2022, The Android Open Source Project
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++
++use android_hardware_security_keymint::aidl::android::hardware::security::keymint::{
++    Algorithm::Algorithm, BlockMode::BlockMode, ErrorCode::ErrorCode, KeyPurpose::KeyPurpose,
++    PaddingMode::PaddingMode, SecurityLevel::SecurityLevel,
++};
++
++use android_system_keystore2::aidl::android::system::keystore2::{
++    Domain::Domain, IKeystoreSecurityLevel::IKeystoreSecurityLevel, KeyDescriptor::KeyDescriptor,
++};
++
++use keystore2_test_utils::{
++    authorizations, get_keystore_service, key_generations, key_generations::Error,
++};
++
++use crate::keystore2_client_test_utils::{
++    perform_sample_sym_key_decrypt_op, perform_sample_sym_key_encrypt_op, SAMPLE_PLAIN_TEXT,
++};
++
++/// Generate a 3DES key. Create encryption and decryption operations using the generated key.
++fn create_3des_key_and_operation(
++    sec_level: &binder::Strong<dyn IKeystoreSecurityLevel>,
++    padding_mode: PaddingMode,
++    block_mode: BlockMode,
++    nonce: &mut Option<Vec<u8>>,
++) -> Result<(), binder::Status> {
++    let alias = format!("ks_3des_test_key_{}{}", block_mode.0, padding_mode.0);
++
++    let key_metadata = key_generations::generate_sym_key(
++        sec_level,
++        Algorithm::TRIPLE_DES,
++        168,
++        &alias,
++        &padding_mode,
++        &block_mode,
++        None,
++    )?;
++
++    // Encrypts `SAMPLE_PLAIN_TEXT` whose length is multiple of DES block size.
++    let cipher_text = perform_sample_sym_key_encrypt_op(
++        sec_level,
++        padding_mode,
++        block_mode,
++        nonce,
++        None,
++        &key_metadata.key,
++    )?;
++    assert!(cipher_text.is_some());
++
++    let plain_text = perform_sample_sym_key_decrypt_op(
++        sec_level,
++        &cipher_text.unwrap(),
++        padding_mode,
++        block_mode,
++        nonce,
++        None,
++        &key_metadata.key,
++    )
++    .unwrap();
++    assert!(plain_text.is_some());
++    assert_eq!(plain_text.unwrap(), SAMPLE_PLAIN_TEXT.to_vec());
++    Ok(())
++}
++
++/// Generate 3DES keys with various block modes and paddings.
++///  - Block Modes: ECB, CBC
++///  - Padding Modes: NONE, PKCS7
++/// Test should generate keys and perform operation successfully.
++#[test]
++fn keystore2_3des_ecb_cbc_generate_key_success() {
++    let keystore2 = get_keystore_service();
++    let block_modes = [BlockMode::ECB, BlockMode::CBC];
++    let padding_modes = [PaddingMode::PKCS7, PaddingMode::NONE];
++
++    let sec_level = keystore2.getSecurityLevel(SecurityLevel::TRUSTED_ENVIRONMENT).unwrap();
++    for block_mode in block_modes {
++        for padding_mode in padding_modes {
++            assert_eq!(
++                Ok(()),
++                create_3des_key_and_operation(&sec_level, padding_mode, block_mode, &mut None)
++            );
++        }
++    }
++}
++
++/// Try to generate 3DES key with invalid key size. Test should fail to generate a key with
++/// an error code `UNSUPPORTED_KEY_SIZE`.
++#[test]
++fn keystore2_3des_key_fails_unsupported_key_size() {
++    let keystore2 = get_keystore_service();
++    let sec_level = keystore2.getSecurityLevel(SecurityLevel::TRUSTED_ENVIRONMENT).unwrap();
++    let alias = "3des_key_test_invalid_1";
++    let invalid_key_size = 128;
++
++    let result = key_generations::map_ks_error(key_generations::generate_sym_key(
++        &sec_level,
++        Algorithm::TRIPLE_DES,
++        invalid_key_size,
++        alias,
++        &PaddingMode::PKCS7,
++        &BlockMode::CBC,
++        None,
++    ));
++    assert!(result.is_err());
++    assert_eq!(Error::Km(ErrorCode::UNSUPPORTED_KEY_SIZE), result.unwrap_err());
++}
++
++/// Generate a 3DES key without providing padding mode and try to use the generated key to create
++/// an operation. Test should fail to create an operation with an error code
++/// `UNSUPPORTED_PADDING_MODE`.
++#[test]
++fn keystore2_3des_key_fails_missing_padding() {
++    let keystore2 = get_keystore_service();
++    let sec_level = keystore2.getSecurityLevel(SecurityLevel::TRUSTED_ENVIRONMENT).unwrap();
++    let alias = "3des_key_test_missing_padding";
++
++    let gen_params = authorizations::AuthSetBuilder::new()
++        .no_auth_required()
++        .algorithm(Algorithm::TRIPLE_DES)
++        .purpose(KeyPurpose::ENCRYPT)
++        .purpose(KeyPurpose::DECRYPT)
++        .key_size(168)
++        .block_mode(BlockMode::ECB);
++
++    let key_metadata = sec_level
++        .generateKey(
++            &KeyDescriptor {
++                domain: Domain::APP,
++                nspace: -1,
++                alias: Some(alias.to_string()),
++                blob: None,
++            },
++            None,
++            &gen_params,
++            0,
++            b"entropy",
++        )
++        .unwrap();
++
++    let op_params = authorizations::AuthSetBuilder::new()
++        .purpose(KeyPurpose::ENCRYPT)
++        .block_mode(BlockMode::ECB);
++
++    let result = key_generations::map_ks_error(sec_level.createOperation(
++        &key_metadata.key,
++        &op_params,
++        false,
++    ));
++    assert!(result.is_err());
++    assert_eq!(Error::Km(ErrorCode::UNSUPPORTED_PADDING_MODE), result.unwrap_err());
++}
++
++/// Generate a 3DES key with padding mode NONE. Try to encrypt a text whose length isn't a
++/// multiple of the DES block size.
++#[test]
++fn keystore2_3des_key_encrypt_fails_invalid_input_length() {
++    let keystore2 = get_keystore_service();
++    let sec_level = keystore2.getSecurityLevel(SecurityLevel::TRUSTED_ENVIRONMENT).unwrap();
++    let alias = "3des_key_test_invalid_input_len";
++
++    let key_metadata = key_generations::generate_sym_key(
++        &sec_level,
++        Algorithm::TRIPLE_DES,
++        168,
++        alias,
++        &PaddingMode::NONE,
++        &BlockMode::ECB,
++        None,
++    )
++    .unwrap();
++
++    let op_params = authorizations::AuthSetBuilder::new()
++        .purpose(KeyPurpose::ENCRYPT)
++        .padding_mode(PaddingMode::NONE)
++        .block_mode(BlockMode::ECB);
++
++    let op_response = sec_level
++        .createOperation(&key_metadata.key, &op_params, false)
++        .expect("Error in creation of operation using rebound key.");
++    assert!(op_response.iOperation.is_some());
++
++    let op = op_response.iOperation.unwrap();
++    // 3DES expects input should be multiple of DES block size (64-bits) length. Try with invalid
++    // length of input.
++    let invalid_block_size_msg = b"my message 111";
++    let result = key_generations::map_ks_error(op.finish(Some(invalid_block_size_msg), None));
++    assert!(result.is_err());
++    assert_eq!(Error::Km(ErrorCode::INVALID_INPUT_LENGTH), result.unwrap_err());
++}
++
++/// Try to generate 3DES key with BlockMode::CTR. Test should fail to create an operation with an
++/// error code `UNSUPPORTED_BLOCK_MODE`.
++#[test]
++fn keystore2_3des_key_fails_unsupported_block_mode() {
++    let keystore2 = get_keystore_service();
++    let sec_level = keystore2.getSecurityLevel(SecurityLevel::TRUSTED_ENVIRONMENT).unwrap();
++
++    let result = key_generations::map_ks_error(create_3des_key_and_operation(
++        &sec_level,
++        PaddingMode::NONE,
++        BlockMode::CTR,
++        &mut None,
++    ));
++    assert!(result.is_err());
++    assert_eq!(Error::Km(ErrorCode::UNSUPPORTED_BLOCK_MODE), result.unwrap_err());
++}
+diff --git a/keystore2/tests/keystore2_client_aes_key_tests.rs b/keystore2/tests/keystore2_client_aes_key_tests.rs
+index 989d047e..c56eef6a 100644
+--- a/keystore2/tests/keystore2_client_aes_key_tests.rs
++++ b/keystore2/tests/keystore2_client_aes_key_tests.rs
+@@ -41,8 +41,9 @@ fn create_aes_key_and_operation(
+ ) -> Result<(), binder::Status> {
+     let alias = format!("ks_aes_test_key_{}{}{}", key_size, block_mode.0, padding_mode.0);
+ 
+-    let key_metadata = key_generations::generate_aes_key(
++    let key_metadata = key_generations::generate_sym_key(
+         sec_level,
++        Algorithm::AES,
+         key_size,
+         &alias,
+         &padding_mode,
+@@ -176,8 +177,9 @@ fn keystore2_aes_key_fails_unsupported_key_size() {
+     let sec_level = keystore2.getSecurityLevel(SecurityLevel::TRUSTED_ENVIRONMENT).unwrap();
+     let alias = "aes_key_test_invalid_1";
+ 
+-    let result = key_generations::map_ks_error(key_generations::generate_aes_key(
++    let result = key_generations::map_ks_error(key_generations::generate_sym_key(
+         &sec_level,
++        Algorithm::AES,
+         1024,
+         alias,
+         &PaddingMode::NONE,
+@@ -196,8 +198,9 @@ fn keystore2_aes_gcm_key_fails_missing_min_mac_len() {
+     let sec_level = keystore2.getSecurityLevel(SecurityLevel::TRUSTED_ENVIRONMENT).unwrap();
+     let alias = "aes_key_test_invalid_1";
+ 
+-    let result = key_generations::map_ks_error(key_generations::generate_aes_key(
++    let result = key_generations::map_ks_error(key_generations::generate_sym_key(
+         &sec_level,
++        Algorithm::AES,
+         128,
+         alias,
+         &PaddingMode::NONE,
+@@ -313,8 +316,9 @@ fn keystore2_aes_key_op_fails_incompatible_padding() {
+     let sec_level = keystore2.getSecurityLevel(SecurityLevel::TRUSTED_ENVIRONMENT).unwrap();
+     let alias = "aes_key_test_invalid_1";
+ 
+-    let key_metadata = key_generations::generate_aes_key(
++    let key_metadata = key_generations::generate_sym_key(
+         &sec_level,
++        Algorithm::AES,
+         128,
+         alias,
+         &PaddingMode::NONE,
+@@ -344,8 +348,9 @@ fn keystore2_aes_key_op_fails_incompatible_blockmode() {
+     let sec_level = keystore2.getSecurityLevel(SecurityLevel::TRUSTED_ENVIRONMENT).unwrap();
+     let alias = "aes_key_test_invalid_1";
+ 
+-    let key_metadata = key_generations::generate_aes_key(
++    let key_metadata = key_generations::generate_sym_key(
+         &sec_level,
++        Algorithm::AES,
+         128,
+         alias,
+         &PaddingMode::NONE,
+@@ -443,8 +448,9 @@ fn keystore2_aes_key_op_fails_nonce_prohibited() {
+     let alias = "aes_key_test_nonce_1";
+     let mut nonce = Some(vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+ 
+-    let key_metadata = key_generations::generate_aes_key(
++    let key_metadata = key_generations::generate_sym_key(
+         &sec_level,
++        Algorithm::AES,
+         128,
+         alias,
+         &PaddingMode::PKCS7,
+diff --git a/keystore2/tests/keystore2_client_test_utils.rs b/keystore2/tests/keystore2_client_test_utils.rs
+index 075912d8..006f2f90 100644
+--- a/keystore2/tests/keystore2_client_test_utils.rs
++++ b/keystore2/tests/keystore2_client_test_utils.rs
+@@ -145,6 +145,7 @@ pub fn get_op_nonce(parameters: &KeyParameters) -> Option<Vec<u8>> {
+ }
+ 
+ /// This performs sample encryption operation with given symmetric key (AES/3DES).
++/// It encrypts `SAMPLE_PLAIN_TEXT` of length 128-bits.
+ pub fn perform_sample_sym_key_encrypt_op(
+     sec_level: &binder::Strong<dyn IKeystoreSecurityLevel>,
+     padding_mode: PaddingMode,
+diff --git a/keystore2/tests/keystore2_client_tests.rs b/keystore2/tests/keystore2_client_tests.rs
+index 1cda123c..734faf61 100644
+--- a/keystore2/tests/keystore2_client_tests.rs
++++ b/keystore2/tests/keystore2_client_tests.rs
+@@ -12,6 +12,7 @@
+ // See the License for the specific language governing permissions and
+ // limitations under the License.
+ 
++pub mod keystore2_client_3des_key_tests;
+ pub mod keystore2_client_aes_key_tests;
+ pub mod keystore2_client_ec_key_tests;
+ pub mod keystore2_client_grant_key_tests;
+-- 
+2.38.1
+

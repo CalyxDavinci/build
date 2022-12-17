@@ -1,0 +1,57 @@
+{
+    "build/soong": [
+        "0001-build-Update-Rust-to-1.66.patch",
+        "0002-Allow-BoringSSL-s-Rust-bindings-to-build.patch",
+        "0003-Try-to-bump-the-C-default-to-C11.patch"
+    ],
+    "packages/modules/DnsResolver": [
+        "0004-Update-source-for-Rust-1.63.0.patch"
+    ],
+    "system/security": [
+        "0005-Update-for-Rust-v1.62.0.patch",
+        "0006-Update-source-for-Rust-1.63.0.patch",
+        "0007-Change-request-for-Rust-v1.64.0.patch",
+        "0008-Refactor-L0-key-handling-ahead-of-fix.patch",
+        "0009-Use-ro.keystore.boot_level_key.strategy.patch",
+        "0010-Drop-ancient-default-salt-value.patch",
+        "0011-Updated-to-return-INVALID_ARGUMENT-on-generateKey-wi.patch",
+        "0012-Adding-test-to-create-BACKEND_BUSY-error.patch",
+        "0013-LSC-Add-LOCAL_LICENSE_KINDS-to-system-security.patch",
+        "0014-Adding-forced-operation-tests.patch",
+        "0015-Adding-operation-pruning-test-DoS.patch",
+        "0016-KeystoreDB-load_access_tuple-method-response-code-up.patch",
+        "0017-Adding-tests-to-Create-forced-operation-with-differe.patch",
+        "0018-Test-keystore-grant-with-invalid-access-vector-value.patch",
+        "0019-Update-for-Rust-v1.62.0.patch",
+        "0020-Adding-generateKey-tests-with-EC-key-algorithm.patch",
+        "0021-Adding-tests-using-Domain-KEY_ID.patch",
+        "0022-Adding-generate-key-tests-using-RSA-algorithm.patch",
+        "0023-Adding-tests-using-AES-algorithm.patch",
+        "0024-Restructured-keystore2-client-tests.patch",
+        "0025-Updated-listEntries-API-response-code-with-invalid-d.patch",
+        "0026-Added-tests-using-3DES-algorithm.patch",
+        "0027-Added-HMAC-key-generation-tests.patch",
+        "0028-Adding-a-test-to-simulate-OPERATION_BUSY-error-from-.patch",
+        "0029-rust_defaults-entry-created-for-Keystore2-AIDL-libra.patch",
+        "0030-Use-latest-KM-AIDL-API.patch",
+        "0031-Use-latest-Keystore2-AIDL-API.patch",
+        "0032-Changes-made-in-keystore2_client_tests-to-avoid-test.patch",
+        "0033-Added-tests-using-attest-keys-for-signing-RSA-and-EC.patch",
+        "0034-Changing-code-to-have-better-error-logging.patch",
+        "0035-Updated-to-return-INVALID_ARGUMENT-response-code-ins.patch",
+        "0036-Tests-to-verify-importKey-with-Asymmetric-and-symmet.patch",
+        "0037-Fix-warnings-from-rustc-1.65.0.patch",
+        "0038-keystore2-Update-source-for-Rust-1.66.0.patch"
+    ],
+    "external/uwb": [
+        "0039-Update-source-for-Rust-1.63.0.patch",
+        "0040-Fix-warnings-from-rustc-1.65.0.patch"
+    ],
+    "packages/modules/Bluetooth": [
+        "0041-Update-source-for-Rust-1.63.0.patch",
+        "0042-Change-request-for-Rust-v1.64.0.patch"
+    ],
+    "frameworks/native": [
+        "0043-Change-request-for-Rust-v1.64.0.patch"
+    ]
+}

@@ -1,16 +1,18 @@
-From 347dc0d397e315749e36a3b38968a1173a33382c Mon Sep 17 00:00:00 2001
-From: Jens Reidel <adrian@travitia.xyz>
-Date: Thu, 10 Nov 2022 23:39:39 +0200
-Subject: [PATCH] keystore2: Update source for Rust 1.65.0
+From 3ef030d8dbebadbcbc899e1c86f824b05e5b521a Mon Sep 17 00:00:00 2001
+From: Chris Wailes <chriswailes@google.com>
+Date: Wed, 16 Nov 2022 15:56:19 -0800
+Subject: [PATCH 29/29] Fix warnings from rustc 1.65.0
 
-Change-Id: Ifa766206d0c5965f240f69d3d0543ce7cfbd6abd
-Signed-off-by: Jens Reidel <adrian@travitia.xyz>
+Bug: 250026064
+Test: m rust
+Change-Id: I90d1ecde006d16967879cec4138e804ad246698d
 ---
  keystore2/src/audit_log.rs       | 2 +-
- keystore2/src/gc.rs              | 2 +-
+ keystore2/src/database.rs        | 4 ++--
+ keystore2/src/gc.rs              | 3 +--
  keystore2/src/legacy_importer.rs | 2 +-
  keystore2/src/operation.rs       | 6 +++---
- 4 files changed, 6 insertions(+), 6 deletions(-)
+ 5 files changed, 8 insertions(+), 9 deletions(-)
 
 diff --git a/keystore2/src/audit_log.rs b/keystore2/src/audit_log.rs
 index 3d7d26e5..07509d36 100644
@@ -25,47 +27,63 @@ index 3d7d26e5..07509d36 100644
              .append_str(key.alias.as_ref().map_or("none", String::as_str))
              .append_i32(owner)
      })
+diff --git a/keystore2/src/database.rs b/keystore2/src/database.rs
+index afa8019c..1be02b42 100644
+--- a/keystore2/src/database.rs
++++ b/keystore2/src/database.rs
+@@ -5022,8 +5022,8 @@ pub mod tests {
+         let list_o_keys: Vec<(i64, i64)> = LIST_O_ENTRIES
+             .iter()
+             .map(|(domain, ns, alias)| {
+-                let entry = make_test_key_entry(&mut db, *domain, *ns, *alias, None)
+-                    .unwrap_or_else(|e| {
++                let entry =
++                    make_test_key_entry(&mut db, *domain, *ns, alias, None).unwrap_or_else(|e| {
+                         panic!("Failed to insert {:?} {} {}. Error {:?}", domain, ns, alias, e)
+                     });
+                 (entry.id(), *ns)
 diff --git a/keystore2/src/gc.rs b/keystore2/src/gc.rs
-index 341aa0a6..1624b81c 100644
+index 8d6c569a..a0333568 100644
 --- a/keystore2/src/gc.rs
 +++ b/keystore2/src/gc.rs
-@@ -125,7 +125,7 @@ impl GcInternal {
+@@ -126,8 +126,7 @@ impl GcInternal {
                      .unwrap()
                      .unwrap_key_if_required(&blob_metadata, &blob)
-                     .context("In process_one_key: Trying to unwrap to-be-deleted blob.")?;
+                     .context(ks_err!("Trying to unwrap to-be-deleted blob.",))?;
 -                (self.invalidate_key)(uuid, &*blob)
-+                (self.invalidate_key)(uuid, &blob)
-                     .context("In process_one_key: Trying to invalidate key.")?;
+-                    .context(ks_err!("Trying to invalidate key."))?;
++                (self.invalidate_key)(uuid, &blob).context(ks_err!("Trying to invalidate key."))?;
              }
          }
+         Ok(())
 diff --git a/keystore2/src/legacy_importer.rs b/keystore2/src/legacy_importer.rs
-index 93e17358..a239ddd3 100644
+index be90d098..9eb702dc 100644
 --- a/keystore2/src/legacy_importer.rs
 +++ b/keystore2/src/legacy_importer.rs
-@@ -516,7 +516,7 @@ impl LegacyImporterState {
+@@ -510,7 +510,7 @@ impl LegacyImporterState {
              }
          };
  
 -        let (km_params, upgraded_blob) = get_key_characteristics_without_app_data(&km_uuid, &*blob)
 +        let (km_params, upgraded_blob) = get_key_characteristics_without_app_data(&km_uuid, &blob)
-             .context(
-                 "In characteristics_file_to_cache: Failed to get key characteristics from device.",
-             )?;
+             .context(ks_err!("Failed to get key characteristics from device.",))?;
+ 
+         let flags = km_blob.get_flags();
 diff --git a/keystore2/src/operation.rs b/keystore2/src/operation.rs
-index 4f33ba6f..1a158536 100644
+index 58f39859..2034a8a0 100644
 --- a/keystore2/src/operation.rs
 +++ b/keystore2/src/operation.rs
-@@ -360,7 +360,7 @@ impl Operation {
+@@ -359,7 +359,7 @@ impl Operation {
              .before_update()
-             .context("In update_aad: Trying to get auth tokens.")?;
+             .context(ks_err!("Trying to get auth tokens."))?;
  
 -        self.update_outcome(&mut *outcome, {
 +        self.update_outcome(&mut outcome, {
              let _wp = wd::watch_millis("Operation::update_aad: calling updateAad", 500);
              map_km_error(self.km_op.updateAad(aad_input, hat.as_ref(), tst.as_ref()))
          })
-@@ -384,7 +384,7 @@ impl Operation {
-             .context("In update: Trying to get auth tokens.")?;
+@@ -383,7 +383,7 @@ impl Operation {
+             .context(ks_err!("Trying to get auth tokens."))?;
  
          let output = self
 -            .update_outcome(&mut *outcome, {
@@ -73,8 +91,8 @@ index 4f33ba6f..1a158536 100644
                  let _wp = wd::watch_millis("Operation::update: calling update", 500);
                  map_km_error(self.km_op.update(input, hat.as_ref(), tst.as_ref()))
              })
-@@ -414,7 +414,7 @@ impl Operation {
-             .context("In finish: Trying to get auth tokens.")?;
+@@ -413,7 +413,7 @@ impl Operation {
+             .context(ks_err!("Trying to get auth tokens."))?;
  
          let output = self
 -            .update_outcome(&mut *outcome, {

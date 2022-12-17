@@ -1,0 +1,27 @@
+From 962b0a9d2fc61fbb52b02aba7eeb09f58dc38015 Mon Sep 17 00:00:00 2001
+From: Matthew Maurer <mmaurer@google.com>
+Date: Wed, 27 Apr 2022 14:20:11 -0700
+Subject: [PATCH] Allow BoringSSL's Rust bindings to build
+
+Bug: 177080016
+Test: mm in boringssl
+Change-Id: I3cdf031ebf7c5bafce00c078107fd7fb3a26ba2d
+---
+ rust/config/allowed_list.go | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/rust/config/allowed_list.go b/rust/config/allowed_list.go
+index 802e1da7f..746857916 100644
+--- a/rust/config/allowed_list.go
++++ b/rust/config/allowed_list.go
+@@ -8,6 +8,7 @@ var (
+ 	RustAllowedPaths = []string{
+ 		"device/google/cuttlefish",
+ 		"external/adhd",
++		"external/boringssl",
+ 		"external/crosvm",
+ 		"external/libchromeos-rs",
+ 		"external/minijail",
+-- 
+2.38.1
+

@@ -1,0 +1,70 @@
+From b10dc563edb0ec1113bc776d85e117eee3d1d500 Mon Sep 17 00:00:00 2001
+From: Rajesh Nyamagoud <nyamagoud@google.com>
+Date: Fri, 21 Oct 2022 18:59:40 +0000
+Subject: [PATCH 27/29] Updated to return `INVALID_ARGUMENT` response code
+ instead of `SYSTEM_ERROR` while loading attest key.
+
+While loading attest-key if it fails to find its blob or cert
+then `INVALID_ARGUMENT` error reponse is returned instead of
+`SYSTEM_ERROR`.
+Bug: 254703846
+Test: atest CtsKeystoreTestCases; atest keystore2_client_tests
+
+Change-Id: Ie0d75c3bd99057b4c775e9c8f9dd91385cd6db81
+---
+ keystore2/src/attestation_key_utils.rs               | 6 +++---
+ keystore2/tests/keystore2_client_attest_key_tests.rs | 4 ++--
+ 2 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/keystore2/src/attestation_key_utils.rs b/keystore2/src/attestation_key_utils.rs
+index f53a88cc..94f3e4cb 100644
+--- a/keystore2/src/attestation_key_utils.rs
++++ b/keystore2/src/attestation_key_utils.rs
+@@ -26,7 +26,7 @@ use android_hardware_security_keymint::aidl::android::hardware::security::keymin
+     AttestationKey::AttestationKey, Certificate::Certificate, KeyParameter::KeyParameter, Tag::Tag,
+ };
+ use android_system_keystore2::aidl::android::system::keystore2::{
+-    Domain::Domain, KeyDescriptor::KeyDescriptor,
++    Domain::Domain, KeyDescriptor::KeyDescriptor, ResponseCode::ResponseCode,
+ };
+ use anyhow::{Context, Result};
+ use keystore2_crypto::parse_subject_from_certificate;
+@@ -119,11 +119,11 @@ fn load_attest_key_blob_and_cert(
+ 
+             let (blob, blob_metadata) = key_entry
+                 .take_key_blob_info()
+-                .ok_or_else(Error::sys)
++                .ok_or(Error::Rc(ResponseCode::INVALID_ARGUMENT))
+                 .context(ks_err!("Successfully loaded key entry, but KM blob was missing"))?;
+             let cert = key_entry
+                 .take_cert()
+-                .ok_or_else(Error::sys)
++                .ok_or(Error::Rc(ResponseCode::INVALID_ARGUMENT))
+                 .context(ks_err!("Successfully loaded key entry, but cert was missing"))?;
+             Ok((key_id_guard, blob, cert, blob_metadata))
+         }
+diff --git a/keystore2/tests/keystore2_client_attest_key_tests.rs b/keystore2/tests/keystore2_client_attest_key_tests.rs
+index b97d27fd..fc3148c7 100644
+--- a/keystore2/tests/keystore2_client_attest_key_tests.rs
++++ b/keystore2/tests/keystore2_client_attest_key_tests.rs
+@@ -424,7 +424,7 @@ fn keystore2_attest_rsa_key_with_non_attest_key_fails_incompat_purpose_error() {
+ }
+ 
+ /// Generate a symmetric key. Try to use this symmetric key as attestation key while generating RSA
+-/// key. Test should fail to generate a key with response code `SYSTEM_ERROR`.
++/// key. Test should fail to generate a key with response code `INVALID_ARGUMENT`.
+ #[test]
+ fn keystore2_attest_rsa_key_with_symmetric_key_fails_sys_error() {
+     skip_test_if_no_app_attest_key_feature!();
+@@ -466,7 +466,7 @@ fn keystore2_attest_rsa_key_with_symmetric_key_fails_sys_error() {
+         Some(&sym_key_metadata.key),
+     ));
+     assert!(result.is_err());
+-    assert_eq!(Error::Rc(ResponseCode::SYSTEM_ERROR), result.unwrap_err());
++    assert_eq!(Error::Rc(ResponseCode::INVALID_ARGUMENT), result.unwrap_err());
+ }
+ 
+ /// Generate RSA attestation key and try to use it as attestation key while generating symmetric
+-- 
+2.38.1
+

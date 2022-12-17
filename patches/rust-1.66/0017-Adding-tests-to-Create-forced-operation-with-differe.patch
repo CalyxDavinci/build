@@ -1,0 +1,103 @@
+From e8275b08ac78c48303c8a6c3a7465194bcc71fd0 Mon Sep 17 00:00:00 2001
+From: Rajesh Nyamagoud <nyamagoud@google.com>
+Date: Wed, 8 Dec 2021 21:27:15 +0000
+Subject: [PATCH 10/29] Adding tests to Create forced operation with different
+ contexts.
+
+Verify that the clients (for ex: clients with `vold` context) with
+`req_forced_op` permission are allowed to create forced (unpruneable)
+operations otherwise the creation of forced operation is denied.
+
+Bug: 194359114
+Test: atest keystore2_client_test
+Change-Id: I73d85ac127274e623095e233368b0211f6738d6e
+---
+ keystore2/test_utils/key_generations.rs   |  2 +
+ keystore2/tests/keystore2_client_tests.rs | 61 +++++++++++++++++++++++
+ 2 files changed, 63 insertions(+)
+
+diff --git a/keystore2/test_utils/key_generations.rs b/keystore2/test_utils/key_generations.rs
+index f8628eec..6398f31c 100644
+--- a/keystore2/test_utils/key_generations.rs
++++ b/keystore2/test_utils/key_generations.rs
+@@ -30,6 +30,8 @@ use android_system_keystore2::binder::{ExceptionCode, Result as BinderResult};
+ 
+ /// Shell namespace.
+ pub const SELINUX_SHELL_NAMESPACE: i64 = 1;
++/// Vold namespace.
++pub const SELINUX_VOLD_NAMESPACE: i64 = 100;
+ 
+ /// SU context.
+ pub const TARGET_SU_CTX: &str = "u:r:su:s0";
+diff --git a/keystore2/tests/keystore2_client_tests.rs b/keystore2/tests/keystore2_client_tests.rs
+index f027d88d..06268c50 100644
+--- a/keystore2/tests/keystore2_client_tests.rs
++++ b/keystore2/tests/keystore2_client_tests.rs
+@@ -461,3 +461,64 @@ fn keystore2_get_key_entry_blob_fail() {
+     // Delete the generated key blob.
+     sec_level.deleteKey(&key_metadata.key).unwrap();
+ }
++
++/// Try to create forced operations with various contexts -
++///   - untrusted_app
++///   - system_server
++///   - priv_app
++/// `PERMISSION_DENIED` error response is expected.
++#[test]
++fn keystore2_forced_op_perm_denied_test() {
++    static TARGET_CTXS: &[&str] =
++        &["u:r:untrusted_app:s0", "u:r:system_server:s0", "u:r:priv_app:s0"];
++    const USER_ID: u32 = 99;
++    const APPLICATION_ID: u32 = 10601;
++
++    let uid = USER_ID * AID_USER_OFFSET + APPLICATION_ID;
++    let gid = USER_ID * AID_USER_OFFSET + APPLICATION_ID;
++
++    for context in TARGET_CTXS.iter() {
++        unsafe {
++            run_as::run_as(context, Uid::from_raw(uid), Gid::from_raw(gid), move || {
++                let alias = format!("ks_app_forced_op_test_key_{}", getuid());
++                let result = key_generations::map_ks_error(create_signing_operation(
++                    ForcedOp(true),
++                    KeyPurpose::SIGN,
++                    Digest::SHA_2_256,
++                    Domain::APP,
++                    -1,
++                    Some(alias),
++                ));
++                assert!(result.is_err());
++                assert_eq!(Error::Rc(ResponseCode::PERMISSION_DENIED), result.unwrap_err());
++            });
++        }
++    }
++}
++
++/// Try to create a forced operation with `vold` context.
++/// Should be able to create forced operation with `vold` context successfully.
++#[test]
++fn keystore2_forced_op_success_test() {
++    static TARGET_CTX: &str = "u:r:vold:s0";
++    const USER_ID: u32 = 99;
++    const APPLICATION_ID: u32 = 10601;
++
++    let uid = USER_ID * AID_USER_OFFSET + APPLICATION_ID;
++    let gid = USER_ID * AID_USER_OFFSET + APPLICATION_ID;
++
++    unsafe {
++        run_as::run_as(TARGET_CTX, Uid::from_raw(uid), Gid::from_raw(gid), move || {
++            let alias = format!("ks_vold_forced_op_key_{}", getuid());
++            create_signing_operation(
++                ForcedOp(true),
++                KeyPurpose::SIGN,
++                Digest::SHA_2_256,
++                Domain::SELINUX,
++                key_generations::SELINUX_VOLD_NAMESPACE,
++                Some(alias),
++            )
++            .expect("Client with vold context failed to create forced operation.");
++        });
++    }
++}
+-- 
+2.38.1
+

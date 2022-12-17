@@ -1,7 +1,7 @@
-From bdc5a40dac96399a3563201192113f9419833ab9 Mon Sep 17 00:00:00 2001
+From a8feef13f264d50db84123feffa4ce0e94067bfe Mon Sep 17 00:00:00 2001
 From: TheScarastic <warabhishek@gmail.com>
 Date: Wed, 6 Oct 2021 06:44:17 +0000
-Subject: [PATCH 5/6] udfps: Make pressed udfp view configurable
+Subject: [PATCH] udfps: Make pressed udfp view configurable
 
  * set a solid color by configuring config_udfpsColor
  * set a custom image by setting udfps_icon_pressed and making config_udfpsColor #00ffffff (transparent)
@@ -9,8 +9,9 @@ Subject: [PATCH 5/6] udfps: Make pressed udfp view configurable
 Change-Id: I2460f6196d32fe46eb97f9a5c767bde5c9976681
 ---
  .../res/drawable-nodpi/udfps_icon_pressed.png   | Bin 0 -> 108 bytes
+ packages/SystemUI/res/values/lineage_config.xml |   3 +++
  .../systemui/biometrics/UdfpsSurfaceView.java   |  16 +++++++++++++++-
- 2 files changed, 15 insertions(+), 1 deletion(-)
+ 3 files changed, 18 insertions(+), 1 deletion(-)
  create mode 100644 packages/SystemUI/res/drawable-nodpi/udfps_icon_pressed.png
 
 diff --git a/packages/SystemUI/res/drawable-nodpi/udfps_icon_pressed.png b/packages/SystemUI/res/drawable-nodpi/udfps_icon_pressed.png
@@ -25,8 +26,22 @@ D@OB!I
 literal 0
 HcmV?d00001
 
+diff --git a/packages/SystemUI/res/values/lineage_config.xml b/packages/SystemUI/res/values/lineage_config.xml
+index 1cfaac673451..ac4ede079963 100644
+--- a/packages/SystemUI/res/values/lineage_config.xml
++++ b/packages/SystemUI/res/values/lineage_config.xml
+@@ -25,6 +25,9 @@
+          causes a poor experience. -->
+     <bool name="config_fingerprintWakeAndUnlock">true</bool>
+ 
++    <!-- Color of the UDFPS pressed view -->
++    <color name="config_udfpsColor">#ffffffff</color>
++
+     <!-- Udfps display mode provider class name -->
+     <string name="config_udfpsDisplayModeProviderComponent">com.android.systemui.biometrics.DummyUdfpsDisplayModeProvider</string>
+ </resources>
 diff --git a/packages/SystemUI/src/com/android/systemui/biometrics/UdfpsSurfaceView.java b/packages/SystemUI/src/com/android/systemui/biometrics/UdfpsSurfaceView.java
-index 77fad35d32d4..71e33a699934 100644
+index f5ada948dab7..2488132b508b 100644
 --- a/packages/SystemUI/src/com/android/systemui/biometrics/UdfpsSurfaceView.java
 +++ b/packages/SystemUI/src/com/android/systemui/biometrics/UdfpsSurfaceView.java
 @@ -19,6 +19,7 @@ package com.android.systemui.biometrics;
@@ -82,5 +97,5 @@ index 77fad35d32d4..71e33a699934 100644
          } finally {
              // Make sure the surface is never left in a bad state.
 -- 
-2.37.3
+2.38.1
 

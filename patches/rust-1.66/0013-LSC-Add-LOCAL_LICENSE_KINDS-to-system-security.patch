@@ -1,0 +1,41 @@
+From deb4b6ab09afa8ac0c4a495b8e32d75642b20508 Mon Sep 17 00:00:00 2001
+From: Bob Badour <bbadour@google.com>
+Date: Thu, 19 May 2022 09:15:17 -0700
+Subject: [PATCH 06/29] [LSC] Add LOCAL_LICENSE_KINDS to system/security
+
+Added SPDX-license-identifier-Apache-2.0 to:
+  keystore2/tests/Android.bp
+
+Bug: 68860345
+Bug: 151177513
+Bug: 151953481
+
+Test: m all
+Change-Id: I816f5ba7db5e359b97f1bd0222ca43eebacfc4d1
+---
+ keystore2/tests/Android.bp | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/keystore2/tests/Android.bp b/keystore2/tests/Android.bp
+index 21784a1d..e5d78e41 100644
+--- a/keystore2/tests/Android.bp
++++ b/keystore2/tests/Android.bp
+@@ -12,6 +12,15 @@
+ // See the License for the specific language governing permissions and
+ // limitations under the License.
+ 
++package {
++    // See: http://go/android-license-faq
++    // A large-scale-change added 'default_applicable_licenses' to import
++    // all of the 'license_kinds' from "system_security_license"
++    // to get the below license kinds:
++    //   SPDX-license-identifier-Apache-2.0
++    default_applicable_licenses: ["system_security_license"],
++}
++
+ rust_test {
+     name: "keystore2_client_tests",
+     defaults: [
+-- 
+2.38.1
+

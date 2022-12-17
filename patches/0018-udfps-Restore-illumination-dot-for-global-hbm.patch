@@ -1,16 +1,16 @@
-From 675f71fa9c41532a2509c25cc8eddce617e8e944 Mon Sep 17 00:00:00 2001
+From 10e473a52ba26e42a88cd21308b4200ae673910e Mon Sep 17 00:00:00 2001
 From: Arian <arian.kulmer@web.de>
 Date: Sat, 20 Aug 2022 23:38:25 +0200
-Subject: [PATCH 1/6] udfps: Restore illumination dot for global hbm
+Subject: [PATCH] udfps: Restore illumination dot for global hbm
 
 UdfpsSurfaceView.java is imported from android-12.1.0_r22
 
-Change-Id: Id734ea5415b20dcd1b3645303be1c18d2f1e7ed0
+Change-Id: I4a4e85a7437a9a444a4f952fd62e4fe12f56ce5a
 ---
  packages/SystemUI/res/layout/udfps_view.xml   |   6 +
  .../systemui/biometrics/UdfpsSurfaceView.java | 145 ++++++++++++++++++
- .../android/systemui/biometrics/UdfpsView.kt  |  28 +++-
- 3 files changed, 177 insertions(+), 2 deletions(-)
+ .../android/systemui/biometrics/UdfpsView.kt  |  33 +++-
+ 3 files changed, 183 insertions(+), 1 deletion(-)
  create mode 100644 packages/SystemUI/src/com/android/systemui/biometrics/UdfpsSurfaceView.java
 
 diff --git a/packages/SystemUI/res/layout/udfps_view.xml b/packages/SystemUI/res/layout/udfps_view.xml
@@ -30,7 +30,7 @@ index 257d238f5c54..0fcbfa161ddf 100644
  </com.android.systemui.biometrics.UdfpsView>
 diff --git a/packages/SystemUI/src/com/android/systemui/biometrics/UdfpsSurfaceView.java b/packages/SystemUI/src/com/android/systemui/biometrics/UdfpsSurfaceView.java
 new file mode 100644
-index 000000000000..77fad35d32d4
+index 000000000000..f5ada948dab7
 --- /dev/null
 +++ b/packages/SystemUI/src/com/android/systemui/biometrics/UdfpsSurfaceView.java
 @@ -0,0 +1,145 @@
@@ -77,16 +77,16 @@ index 000000000000..77fad35d32d4
 +    interface GhbmIlluminationListener {
 +        /**
 +         * @param surface the surface for which GHBM should be enabled.
-+         * @param onIlluminatedRunnable a runnable that should be run after GHBM is enabled.
++         * @param onDisplayConfigured a runnable that should be run after GHBM is enabled.
 +         */
-+        void enableGhbm(@NonNull Surface surface, @Nullable Runnable onIlluminatedRunnable);
++        void enableGhbm(@NonNull Surface surface, @Nullable Runnable onDisplayConfigured);
 +    }
 +
 +    @NonNull private final SurfaceHolder mHolder;
 +    @NonNull private final Paint mSensorPaint;
 +
 +    @Nullable private GhbmIlluminationListener mGhbmIlluminationListener;
-+    @Nullable private Runnable mOnIlluminatedRunnable;
++    @Nullable private Runnable mOnDisplayConfigured;
 +    boolean mAwaitingSurfaceToStartIllumination;
 +    boolean mHasValidSurface;
 +
@@ -112,8 +112,8 @@ index 000000000000..77fad35d32d4
 +    @Override public void surfaceCreated(SurfaceHolder holder) {
 +        mHasValidSurface = true;
 +        if (mAwaitingSurfaceToStartIllumination) {
-+            doIlluminate(mOnIlluminatedRunnable);
-+            mOnIlluminatedRunnable = null;
++            doIlluminate(mOnDisplayConfigured);
++            mOnDisplayConfigured = null;
 +            mAwaitingSurfaceToStartIllumination = false;
 +        }
 +    }
@@ -136,27 +136,27 @@ index 000000000000..77fad35d32d4
 +     * {@link UdfpsView} will hide this view, which would destroy the surface and remove the
 +     * illumination dot.
 +     */
-+    void startGhbmIllumination(@Nullable Runnable onIlluminatedRunnable) {
++    void startGhbmIllumination(@Nullable Runnable onDisplayConfigured) {
 +        if (mGhbmIlluminationListener == null) {
 +            Log.e(TAG, "startIllumination | mGhbmIlluminationListener is null");
 +            return;
 +        }
 +
 +        if (mHasValidSurface) {
-+            doIlluminate(onIlluminatedRunnable);
++            doIlluminate(onDisplayConfigured);
 +        } else {
 +            mAwaitingSurfaceToStartIllumination = true;
-+            mOnIlluminatedRunnable = onIlluminatedRunnable;
++            mOnDisplayConfigured = onDisplayConfigured;
 +        }
 +    }
 +
-+    private void doIlluminate(@Nullable Runnable onIlluminatedRunnable) {
++    private void doIlluminate(@Nullable Runnable onDisplayConfigured) {
 +        if (mGhbmIlluminationListener == null) {
 +            Log.e(TAG, "doIlluminate | mGhbmIlluminationListener is null");
 +            return;
 +        }
 +
-+        mGhbmIlluminationListener.enableGhbm(mHolder.getSurface(), onIlluminatedRunnable);
++        mGhbmIlluminationListener.enableGhbm(mHolder.getSurface(), onDisplayConfigured);
 +    }
 +
 +    /**
@@ -180,7 +180,7 @@ index 000000000000..77fad35d32d4
 +    }
 +}
 diff --git a/packages/SystemUI/src/com/android/systemui/biometrics/UdfpsView.kt b/packages/SystemUI/src/com/android/systemui/biometrics/UdfpsView.kt
-index 245c2252d57b..5f0c53c9b7bb 100644
+index a15456d46897..f4d3b2342bd5 100644
 --- a/packages/SystemUI/src/com/android/systemui/biometrics/UdfpsView.kt
 +++ b/packages/SystemUI/src/com/android/systemui/biometrics/UdfpsView.kt
 @@ -24,6 +24,7 @@ import android.graphics.RectF
@@ -191,9 +191,9 @@ index 245c2252d57b..5f0c53c9b7bb 100644
  import android.widget.FrameLayout
  import com.android.systemui.R
  import com.android.systemui.doze.DozeReceiver
-@@ -60,6 +61,9 @@ class UdfpsView(
-         com.android.internal.R.integer.config_udfps_illumination_transition_ms
-     ).toLong()
+@@ -56,6 +57,9 @@ class UdfpsView(
+             a.getFloat(R.styleable.UdfpsView_sensorTouchAreaCoefficient, 0f)
+         }
  
 +    // Only used for UdfpsHbmTypes.GLOBAL_HBM.
 +    private var ghbmView: UdfpsSurfaceView? = null
@@ -201,7 +201,7 @@ index 245c2252d57b..5f0c53c9b7bb 100644
      /** View controller (can be different for enrollment, BiometricPrompt, Keyguard, etc.). */
      var animationViewController: UdfpsAnimationViewController<*>? = null
  
-@@ -89,6 +93,10 @@ class UdfpsView(
+@@ -82,6 +86,10 @@ class UdfpsView(
          return (animationViewController == null || !animationViewController!!.shouldPauseAuth())
      }
  
@@ -212,45 +212,43 @@ index 245c2252d57b..5f0c53c9b7bb 100644
      override fun dozeTimeTick() {
          animationViewController?.dozeTimeTick()
      }
-@@ -153,13 +161,25 @@ class UdfpsView(
-     override fun startIllumination(onIlluminatedRunnable: Runnable?) {
-         isIlluminationRequested = true
-         animationViewController?.onIlluminationStarting()
--        doIlluminate(onIlluminatedRunnable)
+@@ -143,12 +151,35 @@ class UdfpsView(
+     fun configureDisplay(onDisplayConfigured: Runnable) {
+         isDisplayConfigured = true
+         animationViewController?.onDisplayConfiguring()
+-        mUdfpsDisplayMode?.enable(onDisplayConfigured)
 +        val gView = ghbmView
 +        if (gView != null) {
 +            gView.setGhbmIlluminationListener(this::doIlluminate)
 +            gView.visibility = VISIBLE
-+            gView.startGhbmIllumination(onIlluminatedRunnable)
++            gView.startGhbmIllumination(onDisplayConfigured)
 +        } else {
-+            doIlluminate(null /* surface */, onIlluminatedRunnable)
++            doIlluminate(null /* surface */, onDisplayConfigured)
 +        }
-     }
- 
--    private fun doIlluminate(onIlluminatedRunnable: Runnable?) {
-+    private fun doIlluminate(surface: Surface?, onIlluminatedRunnable: Runnable?) {
++    }
++
++    private fun doIlluminate(surface: Surface?, onDisplayConfigured: Runnable?) {
 +        if (ghbmView != null && surface == null) {
 +            Log.e(TAG, "doIlluminate | surface must be non-null for GHBM")
 +        }
 +
-         // TODO(b/231335067): enableHbm with halControlsIllumination=true shouldn't make sense.
-         // This only makes sense now because vendor code may rely on the side effects of enableHbm.
-         hbmProvider?.enableHbm(halControlsIllumination) {
++        mUdfpsDisplayMode?.enable {
++            isDisplayConfigured = true
++            animationViewController?.onDisplayConfiguring()
 +            ghbmView?.drawIlluminationDot(sensorRect)
-             if (onIlluminatedRunnable != null) {
-                 if (halControlsIllumination) {
-                     onIlluminatedRunnable.run()
-@@ -177,6 +197,10 @@ class UdfpsView(
-     override fun stopIllumination() {
-         isIlluminationRequested = false
-         animationViewController?.onIlluminationStopped()
++        }
+     }
+ 
+     fun unconfigureDisplay() {
+         isDisplayConfigured = false
+         animationViewController?.onDisplayUnconfigured()
 +        ghbmView?.let { view ->
 +            view.setGhbmIlluminationListener(null)
 +            view.visibility = INVISIBLE
 +        }
-         hbmProvider?.disableHbm(null /* onHbmDisabled */)
+         mUdfpsDisplayMode?.disable(null /* onDisabled */)
      }
  }
 -- 
-2.37.3
+2.38.1
 

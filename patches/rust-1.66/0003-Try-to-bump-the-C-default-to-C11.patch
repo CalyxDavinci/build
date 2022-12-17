@@ -1,0 +1,43 @@
+From 0fc468d307fd89234a004de05844e5ebd48472b2 Mon Sep 17 00:00:00 2001
+From: Elliott Hughes <enh@google.com>
+Date: Mon, 28 Mar 2022 16:47:17 -0700
+Subject: [PATCH] Try to bump the C default to C11.
+
+Even the Linux kernel's moved, so let's see if we can too...
+
+Test: treehugger
+Change-Id: Ic8ceb3b6e7a83acc5defee46618a9345a366d87d
+---
+ cc/cc_test.go       | 2 +-
+ cc/config/global.go | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/cc/cc_test.go b/cc/cc_test.go
+index 09cc352a2..2951b5aae 100644
+--- a/cc/cc_test.go
++++ b/cc/cc_test.go
+@@ -4042,7 +4042,7 @@ func TestIncludeDirectoryOrdering(t *testing.T) {
+ 	cppOnly := []string{"-fPIC", "${config.CommonGlobalCppflags}", "${config.DeviceGlobalCppflags}", "${config.ArmCppflags}"}
+ 
+ 	cflags := []string{"-Wall", "-Werror", "-std=candcpp"}
+-	cstd := []string{"-std=gnu99", "-std=conly"}
++	cstd := []string{"-std=gnu11", "-std=conly"}
+ 	cppstd := []string{"-std=gnu++17", "-std=cpp", "-fno-rtti"}
+ 
+ 	lastIncludes := []string{
+diff --git a/cc/config/global.go b/cc/config/global.go
+index 4fb08b968..e12539370 100644
+--- a/cc/config/global.go
++++ b/cc/config/global.go
+@@ -300,7 +300,7 @@ var (
+ 		"-w",
+ 	}
+ 
+-	CStdVersion               = "gnu99"
++	CStdVersion               = "gnu11"
+ 	CppStdVersion             = "gnu++17"
+ 	ExperimentalCStdVersion   = "gnu11"
+ 	ExperimentalCppStdVersion = "gnu++2a"
+-- 
+2.38.1
+

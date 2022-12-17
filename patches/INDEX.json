@@ -25,59 +25,58 @@
         "0017-Revert-Pre-emptively-take-a-snapshot-when-finishing-.patch",
         "0018-udfps-Restore-illumination-dot-for-global-hbm.patch",
         "0019-udfps-Trigger-onFingerDown-with-regular-action-down-.patch",
-        "0020-udfps-Implement-default-udfps-hbm-provider.patch",
-        "0021-udfps-Change-window-type-to-TYPE_DISPLAY_OVERLAY.patch",
-        "0022-udfps-Make-pressed-udfp-view-configurable.patch",
-        "0023-SystemUI-Apply-monet-to-fingerprint-authentication-r.patch"
+        "0020-udfps-Change-window-type-to-TYPE_DISPLAY_OVERLAY.patch",
+        "0021-udfps-Make-pressed-udfp-view-configurable.patch",
+        "0022-SystemUI-Apply-monet-to-fingerprint-authentication-r.patch"
     ],
     "frameworks/native": [
-        "0024-surfaceflinger-Add-support-for-Udfps-extension-lib.patch",
-        "0025-CompositionEngine-Request-device-composition-for-the.patch"
+        "0023-surfaceflinger-Add-support-for-Udfps-extension-lib.patch",
+        "0024-CompositionEngine-Request-device-composition-for-the.patch"
     ],
     "packages/apps/Settings": [
-        "0026-Settings-Make-kernel-version-clickable.patch",
-        "0027-Settings-Show-full-proc-version-information.patch",
-        "0028-Settings-Change-kernel-preference-behavior.patch",
-        "0029-deviceinfo-Add-device-name-inside-settings-firmwarev.patch",
-        "0030-Settings-gestures-Add-page-for-Screen-Off-UDFPS.patch"
+        "0025-Settings-Make-kernel-version-clickable.patch",
+        "0026-Settings-Show-full-proc-version-information.patch",
+        "0027-Settings-Change-kernel-preference-behavior.patch",
+        "0028-deviceinfo-Add-device-name-inside-settings-firmwarev.patch",
+        "0029-Settings-gestures-Add-page-for-Screen-Off-UDFPS.patch"
     ],
     "packages/apps/Aperture": [
-        "0031-Aperture-Override-Camera2.patch"
+        "0030-Aperture-Override-Camera2.patch"
     ],
     "art": [
-        "0032-art-Disable-debug-tracing-on-production-builds.patch"
+        "0031-art-Disable-debug-tracing-on-production-builds.patch"
     ],
     "system/core": [
-        "0033-Revert-libfs_avb-verifying-vbmeta-digest-early.patch",
-        "0034-Add-wrapped-key-support.patch"
+        "0032-Revert-libfs_avb-verifying-vbmeta-digest-early.patch",
+        "0033-Add-wrapped-key-support.patch"
     ],
     "system/security": [
-        "0035-Handle-key-parameter-conversion-for-FBE_ICE-tag.patch"
+        "0034-Handle-key-parameter-conversion-for-FBE_ICE-tag.patch"
     ],
     "system/vold": [
-        "0036-system-vold-Use-wrapped-key-for-metadata-encryption.patch",
-        "0037-vold-Enable-legacy-support-for-wrapped-key.patch",
-        "0038-vold-Bring-in-more-wrapped-key-changes.patch"
+        "0035-system-vold-Use-wrapped-key-for-metadata-encryption.patch",
+        "0036-vold-Enable-legacy-support-for-wrapped-key.patch",
+        "0037-vold-Bring-in-more-wrapped-key-changes.patch"
     ],
     "external/elfutils": [
-        "0039-Don-t-compile-crc32.c-directly.patch"
+        "0038-Don-t-compile-crc32.c-directly.patch"
     ],
     "bionic": [
-        "0040-bionic-Introduce-high-performance-mimalloc-memory-al.patch",
-        "0041-bionic-Turn-to-mimalloc.patch",
-        "0042-bionic-Don-t-explicitly-set-scudo-in-common-parts.patch"
+        "0039-bionic-Introduce-high-performance-mimalloc-memory-al.patch",
+        "0040-bionic-Turn-to-mimalloc.patch",
+        "0041-bionic-Don-t-explicitly-set-scudo-in-common-parts.patch"
     ],
     "bootable/recovery": [
-        "0043-Convert-updater-Android.mk-to-Android.bp.patch",
-        "0044-updater-Disable-LTO.patch"
+        "0042-Convert-updater-Android.mk-to-Android.bp.patch",
+        "0043-updater-Disable-LTO.patch"
     ],
     "build/core": [
-        "0045-Add-two-product-variables-in-Soong.patch"
+        "0044-Add-two-product-variables-in-Soong.patch"
     ],
     "hardware/interfaces": [
-        "0046-keymasterV4_0-Tags-support-for-FBE-wrapped-key.patch"
+        "0045-keymasterV4_0-Tags-support-for-FBE-wrapped-key.patch"
     ],
     "prebuilts/calyx/chromium/arm64": [
-        "0047-chromium-Nuke-Chromium-only-keep-WebView.patch"
+        "0046-chromium-Nuke-Chromium-only-keep-WebView.patch"
     ]
 }

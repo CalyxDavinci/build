@@ -1,0 +1,37 @@
+From 1b12a736a95be4aa0d9718103d83151137f12f56 Mon Sep 17 00:00:00 2001
+From: Rajesh Nyamagoud <nyamagoud@google.com>
+Date: Thu, 26 May 2022 00:20:38 +0000
+Subject: [PATCH 04/29] Updated to return INVALID_ARGUMENT on generateKey with
+ invalid domain field.
+
+Bug: 211005249
+Test: atest keystore2_client_tests
+Change-Id: I1c2a8f66f2e3a6897d5a2bf48b65fb97bcf9903b
+---
+ keystore2/src/permission.rs | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/keystore2/src/permission.rs b/keystore2/src/permission.rs
+index f17577f3..99b0d4bd 100644
+--- a/keystore2/src/permission.rs
++++ b/keystore2/src/permission.rs
+@@ -19,6 +19,7 @@
+ //! defined by keystore2 and keystore2_key respectively.
+ 
+ use crate::error::Error as KsError;
++use crate::error::ResponseCode;
+ use android_system_keystore2::aidl::android::system::keystore2::{
+     Domain::Domain, KeyDescriptor::KeyDescriptor, KeyPermission::KeyPermission,
+ };
+@@ -388,7 +389,7 @@ pub fn check_key_permission(
+             tctx
+         }
+         _ => {
+-            return Err(KsError::sys())
++            return Err(KsError::Rc(ResponseCode::INVALID_ARGUMENT))
+                 .context(format!("Unknown domain value: \"{:?}\".", key.domain))
+         }
+     };
+-- 
+2.38.1
+

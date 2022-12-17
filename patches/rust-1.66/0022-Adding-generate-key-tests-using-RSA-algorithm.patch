@@ -1,0 +1,1088 @@
+From 15b85c5ead6fd7810342035b0b3013268d459980 Mon Sep 17 00:00:00 2001
+From: Rajesh Nyamagoud <nyamagoud@google.com>
+Date: Mon, 20 Dec 2021 20:37:20 +0000
+Subject: [PATCH 15/29] Adding generate key tests using RSA algorithm.
+
+- Generate RSA signing keys with combinations of digest modes [NONE,
+  MD5, SHA1, SHA_2_224, SHA_2_256, SHA_2_384, SHA_2_512] and padding
+  modes [NONE, RSA_PKCS1_1_5_SIGN, RSA_PSS]. Should be able to
+  create operations using these keys except in below cases.
+   - when padding mode is RSA_PSS and digest mode is NONE
+   - when padding mode is NONE and digest is other than NONE.
+
+- Generate RSA encrypt/decrypt keys with OAEP padding mode, combinations
+  of digests [MD5, SHA1, SHA_2_224, SHA_2_256, SHA_2_384, SHA_2_512] and
+  mgf-digests [MD5, SHA1, SHA_2_224, SHA_2_256, SHA_2_384, SHA_2_512].
+  Should be able to create operations with these generated keys
+  successfully.
+
+- Generate RSA encrypt/decrypt keys with combinations of padding modes
+  [NONE, RSA_PKCS1_1_5_ENCRYPT, RSA_OAEP], digests [NONE, MD5, SHA1,
+  SHA_2_224, SHA_2_256, SHA_2_384, SHA_2_512]. Should be able to create
+  operations with these generated keys successfully except in below case
+   - with padding mode RSA_OAEP and digest mode NONE an error is
+     expected.
+
+- Generate RSA encrypt/decrypt keys with padding modes [NONE,
+  RSA_PKCS1_1_5_ENCRYPT, RSA_OAEP] and without digests. Should be able
+  to create operations with these generated keys successfully.
+
+- Generate RSA keys without padding modes and digest modes. Creation of
+  an operation should fail with unsupported padding mode error.
+
+- Tests to validate failure of generating RSA keys with incompatible
+  purpose, unsupported purpose, unsupported padding mode, unsupported
+  digest and unsupported key sizes.
+
+Bug: 194359114
+Test: atest keystore2_client_test
+Change-Id: I16843932cc170d0e820208f558587aacf13b9272
+---
+ keystore2/test_utils/authorizations.rs    |  59 +-
+ keystore2/test_utils/key_generations.rs   |  89 ++-
+ keystore2/tests/keystore2_client_tests.rs | 827 +++++++++++++++++++++-
+ 3 files changed, 967 insertions(+), 8 deletions(-)
+
+diff --git a/keystore2/test_utils/authorizations.rs b/keystore2/test_utils/authorizations.rs
+index d5a7b7b1..5876c091 100644
+--- a/keystore2/test_utils/authorizations.rs
++++ b/keystore2/test_utils/authorizations.rs
+@@ -17,8 +17,9 @@
+ use std::ops::Deref;
+ 
+ use android_hardware_security_keymint::aidl::android::hardware::security::keymint::{
+-    Algorithm::Algorithm, Digest::Digest, EcCurve::EcCurve, KeyParameter::KeyParameter,
+-    KeyParameterValue::KeyParameterValue, KeyPurpose::KeyPurpose, Tag::Tag,
++    Algorithm::Algorithm, BlockMode::BlockMode, Digest::Digest, EcCurve::EcCurve,
++    KeyParameter::KeyParameter, KeyParameterValue::KeyParameterValue, KeyPurpose::KeyPurpose,
++    PaddingMode::PaddingMode, Tag::Tag,
+ };
+ 
+ /// Helper struct to create set of Authorizations.
+@@ -87,6 +88,60 @@ impl AuthSetBuilder {
+         });
+         self
+     }
++
++    /// Add RSA_public_exponent.
++    pub fn rsa_public_exponent(mut self, e: i64) -> Self {
++        self.0.push(KeyParameter {
++            tag: Tag::RSA_PUBLIC_EXPONENT,
++            value: KeyParameterValue::LongInteger(e),
++        });
++        self
++    }
++
++    /// Add key size.
++    pub fn key_size(mut self, s: i32) -> Self {
++        self.0.push(KeyParameter { tag: Tag::KEY_SIZE, value: KeyParameterValue::Integer(s) });
++        self
++    }
++
++    /// Add block mode.
++    pub fn block_mode(mut self, b: BlockMode) -> Self {
++        self.0.push(KeyParameter { tag: Tag::BLOCK_MODE, value: KeyParameterValue::BlockMode(b) });
++        self
++    }
++
++    /// Add certificate_not_before.
++    pub fn cert_not_before(mut self, b: i64) -> Self {
++        self.0.push(KeyParameter {
++            tag: Tag::CERTIFICATE_NOT_BEFORE,
++            value: KeyParameterValue::DateTime(b),
++        });
++        self
++    }
++
++    /// Add certificate_not_after.
++    pub fn cert_not_after(mut self, a: i64) -> Self {
++        self.0.push(KeyParameter {
++            tag: Tag::CERTIFICATE_NOT_AFTER,
++            value: KeyParameterValue::DateTime(a),
++        });
++        self
++    }
++
++    /// Add padding mode.
++    pub fn padding_mode(mut self, p: PaddingMode) -> Self {
++        self.0.push(KeyParameter { tag: Tag::PADDING, value: KeyParameterValue::PaddingMode(p) });
++        self
++    }
++
++    /// Add mgf_digest.
++    pub fn mgf_digest(mut self, d: Digest) -> Self {
++        self.0.push(KeyParameter {
++            tag: Tag::RSA_OAEP_MGF_DIGEST,
++            value: KeyParameterValue::Digest(d),
++        });
++        self
++    }
+ }
+ 
+ impl Deref for AuthSetBuilder {
+diff --git a/keystore2/test_utils/key_generations.rs b/keystore2/test_utils/key_generations.rs
+index b1405c72..36986ecf 100644
+--- a/keystore2/test_utils/key_generations.rs
++++ b/keystore2/test_utils/key_generations.rs
+@@ -17,8 +17,8 @@
+ use anyhow::Result;
+ 
+ use android_hardware_security_keymint::aidl::android::hardware::security::keymint::{
+-    Algorithm::Algorithm, Digest::Digest, EcCurve::EcCurve, ErrorCode::ErrorCode,
+-    KeyPurpose::KeyPurpose,
++    Algorithm::Algorithm, BlockMode::BlockMode, Digest::Digest, EcCurve::EcCurve,
++    ErrorCode::ErrorCode, KeyPurpose::KeyPurpose, PaddingMode::PaddingMode,
+ };
+ use android_system_keystore2::aidl::android::system::keystore2::{
+     Domain::Domain, IKeystoreSecurityLevel::IKeystoreSecurityLevel, KeyDescriptor::KeyDescriptor,
+@@ -39,6 +39,26 @@ pub const TARGET_SU_CTX: &str = "u:r:su:s0";
+ /// Vold context
+ pub const TARGET_VOLD_CTX: &str = "u:r:vold:s0";
+ 
++/// Key parameters to generate a key.
++pub struct KeyParams {
++    /// Key Size.
++    pub key_size: i32,
++    /// Key Purposes.
++    pub purpose: Vec<KeyPurpose>,
++    /// Padding Mode.
++    pub padding: Option<PaddingMode>,
++    /// Digest.
++    pub digest: Option<Digest>,
++    /// MFG Digest.
++    pub mgf_digest: Option<Digest>,
++    /// Block Mode.
++    pub block_mode: Option<BlockMode>,
++    /// Attestation challenge.
++    pub att_challenge: Option<Vec<u8>>,
++    /// Attestation app id.
++    pub att_app_id: Option<Vec<u8>>,
++}
++
+ /// To map Keystore errors.
+ #[derive(thiserror::Error, Debug, Eq, PartialEq)]
+ pub enum Error {
+@@ -168,3 +188,68 @@ pub fn generate_ec_key<S: IKeystoreSecurityLevel + ?Sized>(
+     }
+     Ok(key_metadata)
+ }
++
++/// Generate a RSA key with the given key parameters, alias, domain and namespace.
++pub fn generate_rsa_key(
++    sec_level: &binder::Strong<dyn IKeystoreSecurityLevel>,
++    domain: Domain,
++    nspace: i64,
++    alias: Option<String>,
++    key_params: &KeyParams,
++    attest_key: Option<&KeyDescriptor>,
++) -> binder::Result<KeyMetadata> {
++    let mut gen_params = AuthSetBuilder::new()
++        .no_auth_required()
++        .algorithm(Algorithm::RSA)
++        .rsa_public_exponent(65537)
++        .key_size(key_params.key_size);
++
++    for purpose in &key_params.purpose {
++        gen_params = gen_params.purpose(*purpose);
++    }
++    if let Some(value) = key_params.digest {
++        gen_params = gen_params.digest(value)
++    }
++    if let Some(value) = key_params.padding {
++        gen_params = gen_params.padding_mode(value);
++    }
++    if let Some(value) = key_params.mgf_digest {
++        gen_params = gen_params.mgf_digest(value);
++    }
++    if let Some(value) = key_params.block_mode {
++        gen_params = gen_params.block_mode(value)
++    }
++    if let Some(value) = &key_params.att_challenge {
++        gen_params = gen_params.attestation_challenge(value.to_vec())
++    }
++    if let Some(value) = &key_params.att_app_id {
++        gen_params = gen_params.attestation_app_id(value.to_vec())
++    }
++
++    let key_metadata = sec_level.generateKey(
++        &KeyDescriptor { domain, nspace, alias, blob: None },
++        attest_key,
++        &gen_params,
++        0,
++        b"entropy",
++    )?;
++
++    // Must have a public key.
++    assert!(key_metadata.certificate.is_some());
++
++    if attest_key.is_none() && key_params.att_challenge.is_some() && key_params.att_app_id.is_some()
++    {
++        // Should have an attestation record.
++        assert!(key_metadata.certificateChain.is_some());
++    } else {
++        // Should not have an attestation record.
++        assert!(key_metadata.certificateChain.is_none());
++    }
++
++    assert!(
++        (domain == Domain::BLOB && key_metadata.key.blob.is_some())
++            || key_metadata.key.blob.is_none()
++    );
++
++    Ok(key_metadata)
++}
+diff --git a/keystore2/tests/keystore2_client_tests.rs b/keystore2/tests/keystore2_client_tests.rs
+index 671b4ae8..717b3970 100644
+--- a/keystore2/tests/keystore2_client_tests.rs
++++ b/keystore2/tests/keystore2_client_tests.rs
+@@ -17,13 +17,14 @@ use rustutils::users::AID_USER_OFFSET;
+ use serde::{Deserialize, Serialize};
+ 
+ use android_hardware_security_keymint::aidl::android::hardware::security::keymint::{
+-    Algorithm::Algorithm, Digest::Digest, EcCurve::EcCurve, ErrorCode::ErrorCode,
+-    KeyPurpose::KeyPurpose, SecurityLevel::SecurityLevel,
++    Algorithm::Algorithm, BlockMode::BlockMode, Digest::Digest, EcCurve::EcCurve,
++    ErrorCode::ErrorCode, KeyPurpose::KeyPurpose, PaddingMode::PaddingMode,
++    SecurityLevel::SecurityLevel,
+ };
+ use android_system_keystore2::aidl::android::system::keystore2::{
+     CreateOperationResponse::CreateOperationResponse, Domain::Domain,
+-    IKeystoreOperation::IKeystoreOperation, KeyDescriptor::KeyDescriptor,
+-    KeyPermission::KeyPermission, ResponseCode::ResponseCode,
++    IKeystoreOperation::IKeystoreOperation, IKeystoreSecurityLevel::IKeystoreSecurityLevel,
++    KeyDescriptor::KeyDescriptor, KeyPermission::KeyPermission, ResponseCode::ResponseCode,
+ };
+ 
+ use keystore2_test_utils::authorizations;
+@@ -103,6 +104,37 @@ fn perform_sample_sign_operation(
+     Ok(())
+ }
+ 
++/// Generate a RSA key and create an operation using the generated key.
++fn create_rsa_key_and_operation(
++    sec_level: &binder::Strong<dyn IKeystoreSecurityLevel>,
++    domain: Domain,
++    nspace: i64,
++    alias: Option<String>,
++    key_params: &key_generations::KeyParams,
++    op_purpose: KeyPurpose,
++    forced_op: ForcedOp,
++) -> binder::Result<CreateOperationResponse> {
++    let key_metadata =
++        key_generations::generate_rsa_key(sec_level, domain, nspace, alias, key_params, None)?;
++
++    let mut op_params = authorizations::AuthSetBuilder::new().purpose(op_purpose);
++
++    if let Some(value) = key_params.digest {
++        op_params = op_params.digest(value)
++    }
++    if let Some(value) = key_params.padding {
++        op_params = op_params.padding_mode(value);
++    }
++    if let Some(value) = key_params.mgf_digest {
++        op_params = op_params.mgf_digest(value);
++    }
++    if let Some(value) = key_params.block_mode {
++        op_params = op_params.block_mode(value)
++    }
++
++    sec_level.createOperation(&key_metadata.key, &op_params, forced_op.0)
++}
++
+ /// Create new operation on child proc and perform simple operation after parent notification.
+ fn execute_op_run_as_child(
+     target_ctx: &'static str,
+@@ -1282,3 +1314,790 @@ fn keystore2_key_id_alias_rebind_verify_by_key_id() {
+         ))
+     );
+ }
++
++/// Generate RSA signing keys with -
++///     Padding mode: RSA_PKCS1_1_5_SIGN
++///     Digest modes: `NONE, MD5, SHA1, SHA-2 224, SHA-2 256, SHA-2 384 and SHA-2 512`
++/// Create operations with these generated keys. Test should create operations successfully.
++#[test]
++fn keystore2_rsa_generate_signing_key_padding_pkcs1_1_5() {
++    let keystore2 = get_keystore_service();
++    let sec_level = keystore2.getSecurityLevel(SecurityLevel::TRUSTED_ENVIRONMENT).unwrap();
++
++    let digests = [
++        Digest::NONE,
++        Digest::MD5,
++        Digest::SHA1,
++        Digest::SHA_2_224,
++        Digest::SHA_2_256,
++        Digest::SHA_2_384,
++        Digest::SHA_2_512,
++    ];
++
++    let key_sizes = [2048, 3072, 4096];
++
++    for key_size in key_sizes {
++        for digest in digests {
++            let alias = format!("ks_rsa_key_test_{}{}{}", getuid(), key_size, digest.0);
++            let op_response = create_rsa_key_and_operation(
++                &sec_level,
++                Domain::APP,
++                -1,
++                Some(alias.to_string()),
++                &key_generations::KeyParams {
++                    key_size,
++                    purpose: vec![KeyPurpose::SIGN, KeyPurpose::VERIFY],
++                    padding: Some(PaddingMode::RSA_PKCS1_1_5_SIGN),
++                    digest: Some(digest),
++                    mgf_digest: None,
++                    block_mode: None,
++                    att_challenge: None,
++                    att_app_id: None,
++                },
++                KeyPurpose::SIGN,
++                ForcedOp(false),
++            )
++            .unwrap();
++
++            assert!(op_response.iOperation.is_some());
++            assert_eq!(
++                Ok(()),
++                key_generations::map_ks_error(perform_sample_sign_operation(
++                    &op_response.iOperation.unwrap()
++                ))
++            );
++        } // End of digests.
++    } // End of key-sizes.
++}
++
++/// Generate RSA signing keys with -
++///     Padding mode: RSA_PSS
++///     Digest modes: `MD5, SHA1, SHA-2 224, SHA-2 256, SHA-2 384 and SHA-2 512`
++/// Create operations with these generated keys. Test should create operations successfully.
++#[test]
++fn keystore2_rsa_generate_signing_key_padding_pss_success() {
++    let keystore2 = get_keystore_service();
++    let sec_level = keystore2.getSecurityLevel(SecurityLevel::TRUSTED_ENVIRONMENT).unwrap();
++
++    let digests = [
++        Digest::MD5,
++        Digest::SHA1,
++        Digest::SHA_2_224,
++        Digest::SHA_2_256,
++        Digest::SHA_2_384,
++        Digest::SHA_2_512,
++    ];
++
++    let key_sizes = [2048, 3072, 4096];
++
++    for key_size in key_sizes {
++        for digest in digests {
++            let alias = format!("ks_rsa_key_test_{}{}{}", getuid(), key_size, digest.0);
++            let op_response = create_rsa_key_and_operation(
++                &sec_level,
++                Domain::APP,
++                -1,
++                Some(alias.to_string()),
++                &key_generations::KeyParams {
++                    key_size,
++                    purpose: vec![KeyPurpose::SIGN, KeyPurpose::VERIFY],
++                    padding: Some(PaddingMode::RSA_PSS),
++                    digest: Some(digest),
++                    mgf_digest: None,
++                    block_mode: None,
++                    att_challenge: None,
++                    att_app_id: None,
++                },
++                KeyPurpose::SIGN,
++                ForcedOp(false),
++            )
++            .unwrap();
++
++            assert!(op_response.iOperation.is_some());
++            assert_eq!(
++                Ok(()),
++                key_generations::map_ks_error(perform_sample_sign_operation(
++                    &op_response.iOperation.unwrap()
++                ))
++            );
++        } // End of digests.
++    } // End of key-sizes.
++}
++
++/// Generate RSA signing key with -
++///     Padding mode: RSA_PSS
++///     Digest mode: `NONE`.
++/// Try to create an operation with this generated key. Test should fail to create an operation with
++/// `INCOMPATIBLE_DIGEST` error code.
++#[test]
++fn keystore2_rsa_generate_signing_key_padding_pss_fail() {
++    let keystore2 = get_keystore_service();
++    let sec_level = keystore2.getSecurityLevel(SecurityLevel::TRUSTED_ENVIRONMENT).unwrap();
++
++    let key_sizes = [2048, 3072, 4096];
++
++    for key_size in key_sizes {
++        let alias = format!("ks_rsa_pss_none_key_test_{}{}", getuid(), key_size);
++        let result = key_generations::map_ks_error(create_rsa_key_and_operation(
++            &sec_level,
++            Domain::APP,
++            -1,
++            Some(alias.to_string()),
++            &key_generations::KeyParams {
++                key_size,
++                purpose: vec![KeyPurpose::SIGN, KeyPurpose::VERIFY],
++                padding: Some(PaddingMode::RSA_PSS),
++                digest: Some(Digest::NONE),
++                mgf_digest: None,
++                block_mode: None,
++                att_challenge: None,
++                att_app_id: None,
++            },
++            KeyPurpose::SIGN,
++            ForcedOp(false),
++        ));
++        assert!(result.is_err());
++        assert_eq!(Error::Km(ErrorCode::INCOMPATIBLE_DIGEST), result.unwrap_err());
++    }
++}
++
++/// Generate RSA signing key with -
++///     Padding mode: `NONE`
++///     Digest mode `NONE`
++/// Try to create an operation with this generated key. Test should create an operation successfully.
++#[test]
++fn keystore2_rsa_generate_signing_key_padding_none_success() {
++    let keystore2 = get_keystore_service();
++    let sec_level = keystore2.getSecurityLevel(SecurityLevel::TRUSTED_ENVIRONMENT).unwrap();
++
++    let key_sizes = [2048, 3072, 4096];
++
++    for key_size in key_sizes {
++        let alias = format!("ks_rsa_pad_none_key_test_{}{}", getuid(), key_size);
++        let op_response = create_rsa_key_and_operation(
++            &sec_level,
++            Domain::APP,
++            -1,
++            Some(alias.to_string()),
++            &key_generations::KeyParams {
++                key_size,
++                purpose: vec![KeyPurpose::SIGN, KeyPurpose::VERIFY],
++                padding: Some(PaddingMode::NONE),
++                digest: Some(Digest::NONE),
++                mgf_digest: None,
++                block_mode: None,
++                att_challenge: None,
++                att_app_id: None,
++            },
++            KeyPurpose::SIGN,
++            ForcedOp(false),
++        )
++        .unwrap();
++
++        assert!(op_response.iOperation.is_some());
++        assert_eq!(
++            Ok(()),
++            key_generations::map_ks_error(perform_sample_sign_operation(
++                &op_response.iOperation.unwrap()
++            ))
++        );
++    }
++}
++
++/// Generate RSA signing keys with -
++///     Padding mode: `NONE`
++///     Digest modes: `MD5, SHA1, SHA-2 224, SHA-2 256, SHA-2 384 and SHA-2 512`
++/// Create operations with these generated keys. Test should fail to create operations with
++/// an error code `UNKNOWN_ERROR`.
++#[test]
++fn keystore2_rsa_generate_signing_key_padding_none_fail() {
++    let keystore2 = get_keystore_service();
++    let sec_level = keystore2.getSecurityLevel(SecurityLevel::TRUSTED_ENVIRONMENT).unwrap();
++
++    let digests = [
++        Digest::MD5,
++        Digest::SHA1,
++        Digest::SHA_2_224,
++        Digest::SHA_2_256,
++        Digest::SHA_2_384,
++        Digest::SHA_2_512,
++    ];
++
++    let key_sizes = [2048, 3072, 4096];
++
++    for key_size in key_sizes {
++        for digest in digests {
++            let alias = format!("ks_rsa_key_test_{}{}{}", getuid(), key_size, digest.0);
++            let result = key_generations::map_ks_error(create_rsa_key_and_operation(
++                &sec_level,
++                Domain::APP,
++                -1,
++                Some(alias.to_string()),
++                &key_generations::KeyParams {
++                    key_size,
++                    purpose: vec![KeyPurpose::SIGN, KeyPurpose::VERIFY],
++                    padding: Some(PaddingMode::NONE),
++                    digest: Some(digest),
++                    mgf_digest: None,
++                    block_mode: None,
++                    att_challenge: None,
++                    att_app_id: None,
++                },
++                KeyPurpose::SIGN,
++                ForcedOp(false),
++            ));
++            assert!(result.is_err());
++            assert_eq!(Error::Km(ErrorCode::UNKNOWN_ERROR), result.unwrap_err());
++        }
++    }
++}
++
++/// Generate RSA keys with -
++///     Padding Mode: `RSA_OAEP`
++///     Digest modes: `MD5, SHA1, SHA-2 224, SHA-2 256, SHA-2 384 and SHA-2 512`
++///     mgf-digests: `MD5, SHA1, SHA-2 224, SHA-2 256, SHA-2 384 and SHA-2 512`
++/// Create a decrypt operations using generated keys. Test should create operations successfully.
++#[test]
++fn keystore2_rsa_generate_key_with_oaep_padding_success() {
++    let keystore2 = get_keystore_service();
++    let sec_level = keystore2.getSecurityLevel(SecurityLevel::TRUSTED_ENVIRONMENT).unwrap();
++
++    let digests = [
++        Digest::MD5,
++        Digest::SHA1,
++        Digest::SHA_2_224,
++        Digest::SHA_2_256,
++        Digest::SHA_2_384,
++        Digest::SHA_2_512,
++    ];
++
++    let mgf_digests = [
++        Digest::MD5,
++        Digest::SHA1,
++        Digest::SHA_2_224,
++        Digest::SHA_2_256,
++        Digest::SHA_2_384,
++        Digest::SHA_2_512,
++    ];
++
++    let key_sizes = [2048, 3072, 4096];
++
++    for key_size in key_sizes {
++        for digest in digests {
++            for mgf_digest in mgf_digests {
++                let alias =
++                    format!("ks_rsa_key_pair_oaep_test_{}{}{}", getuid(), key_size, digest.0);
++                let result = create_rsa_key_and_operation(
++                    &sec_level,
++                    Domain::APP,
++                    -1,
++                    Some(alias.to_string()),
++                    &key_generations::KeyParams {
++                        key_size,
++                        purpose: vec![KeyPurpose::ENCRYPT, KeyPurpose::DECRYPT],
++                        padding: Some(PaddingMode::RSA_OAEP),
++                        digest: Some(digest),
++                        mgf_digest: Some(mgf_digest),
++                        block_mode: Some(BlockMode::ECB),
++                        att_challenge: None,
++                        att_app_id: None,
++                    },
++                    KeyPurpose::DECRYPT,
++                    ForcedOp(false),
++                );
++                assert!(result.is_ok());
++            } // End of mgf-digests.
++        } // End of digests.
++    } // End of key-sizes.
++}
++
++/// Generate RSA keys with -
++///     Padding mode: `RSA_OAEP`
++///     Digest modes: `MD5, SHA1, SHA-2 224, SHA-2 256, SHA-2 384 and SHA-2 512`
++/// Create a decrypt operations using generated keys. Test should create operations successfully.
++#[test]
++fn keystore2_rsa_generate_key_with_oaep_padding_and_digests_success() {
++    let keystore2 = get_keystore_service();
++    let sec_level = keystore2.getSecurityLevel(SecurityLevel::TRUSTED_ENVIRONMENT).unwrap();
++
++    let digests = [
++        Digest::MD5,
++        Digest::SHA1,
++        Digest::SHA_2_224,
++        Digest::SHA_2_256,
++        Digest::SHA_2_384,
++        Digest::SHA_2_512,
++    ];
++
++    let key_sizes = [2048, 3072, 4096];
++
++    for key_size in key_sizes {
++        for digest in digests {
++            let alias = format!("ks_rsa_key_pair_oaep_test_{}{}{}", getuid(), key_size, digest.0);
++            let result = create_rsa_key_and_operation(
++                &sec_level,
++                Domain::APP,
++                -1,
++                Some(alias.to_string()),
++                &key_generations::KeyParams {
++                    key_size,
++                    purpose: vec![KeyPurpose::ENCRYPT, KeyPurpose::DECRYPT],
++                    padding: Some(PaddingMode::RSA_OAEP),
++                    digest: Some(digest),
++                    mgf_digest: None,
++                    block_mode: Some(BlockMode::ECB),
++                    att_challenge: None,
++                    att_app_id: None,
++                },
++                KeyPurpose::DECRYPT,
++                ForcedOp(false),
++            );
++            assert!(result.is_ok());
++        } // End of digests.
++    } // End of key-sizes.
++}
++
++/// Generate RSA encryption key with -
++///     Digest mode: `NONE`
++///     Padding mode: `RSA_OAEP`
++/// Try to create an operation using generated key. Test should fail to create an operation
++/// with an error code `INCOMPATIBLE_DIGEST`.
++#[test]
++fn keystore2_rsa_generate_key_with_oaep_padding_fail() {
++    let keystore2 = get_keystore_service();
++    let sec_level = keystore2.getSecurityLevel(SecurityLevel::TRUSTED_ENVIRONMENT).unwrap();
++
++    let key_sizes = [2048, 3072, 4096];
++
++    for key_size in key_sizes {
++        let alias = format!("ks_rsa_key_padding_{}{}", getuid(), key_size);
++        let result = key_generations::map_ks_error(create_rsa_key_and_operation(
++            &sec_level,
++            Domain::APP,
++            -1,
++            Some(alias.to_string()),
++            &key_generations::KeyParams {
++                key_size,
++                purpose: vec![KeyPurpose::ENCRYPT, KeyPurpose::DECRYPT],
++                padding: Some(PaddingMode::RSA_OAEP),
++                digest: Some(Digest::NONE),
++                mgf_digest: None,
++                block_mode: None,
++                att_challenge: None,
++                att_app_id: None,
++            },
++            KeyPurpose::DECRYPT,
++            ForcedOp(false),
++        ));
++
++        assert!(result.is_err());
++        assert_eq!(Error::Km(ErrorCode::INCOMPATIBLE_DIGEST), result.unwrap_err());
++    }
++}
++
++/// Generate RSA encryption keys with various digest mode and padding mode combinations.
++///     Digest modes: `MD5, SHA1, SHA-2 224, SHA-2 256, SHA-2 384 and SHA-2 512`
++///     Padding modes: `NONE, RSA_PKCS1_1_5_ENCRYPT`
++/// Try to create operations using generated keys, test should create operations successfully.
++#[test]
++fn keystore2_rsa_generate_keys_with_digest_paddings() {
++    let keystore2 = get_keystore_service();
++    let sec_level = keystore2.getSecurityLevel(SecurityLevel::TRUSTED_ENVIRONMENT).unwrap();
++
++    let digests = [
++        Digest::NONE,
++        Digest::MD5,
++        Digest::SHA1,
++        Digest::SHA_2_224,
++        Digest::SHA_2_256,
++        Digest::SHA_2_384,
++        Digest::SHA_2_512,
++    ];
++
++    let paddings = [PaddingMode::NONE, PaddingMode::RSA_PKCS1_1_5_ENCRYPT];
++
++    let key_sizes = [2048, 3072, 4096];
++
++    for key_size in key_sizes {
++        for digest in digests {
++            for padding in paddings {
++                let alias = format!("ks_rsa_key_padding_{}{}{}", getuid(), key_size, digest.0);
++                let result = key_generations::map_ks_error(create_rsa_key_and_operation(
++                    &sec_level,
++                    Domain::APP,
++                    -1,
++                    Some(alias.to_string()),
++                    &key_generations::KeyParams {
++                        key_size,
++                        purpose: vec![KeyPurpose::ENCRYPT, KeyPurpose::DECRYPT],
++                        padding: Some(padding),
++                        digest: Some(digest),
++                        mgf_digest: None,
++                        block_mode: None,
++                        att_challenge: None,
++                        att_app_id: None,
++                    },
++                    KeyPurpose::DECRYPT,
++                    ForcedOp(false),
++                ));
++
++                assert!(result.is_ok());
++            } // End of paddings.
++        } // End of digests.
++    } // End of key-sizes.
++}
++
++/// Generate RSA encryption keys with only padding modes.
++///     Padding modes: `NONE, RSA_PKCS1_1_5_ENCRYPT`
++/// Try to create operations using generated keys, test should create operations successfully.
++#[test]
++fn keystore2_rsa_generate_keys_with_paddings() {
++    let keystore2 = get_keystore_service();
++    let sec_level = keystore2.getSecurityLevel(SecurityLevel::TRUSTED_ENVIRONMENT).unwrap();
++
++    let paddings = [PaddingMode::NONE, PaddingMode::RSA_PKCS1_1_5_ENCRYPT];
++
++    let key_sizes = [2048, 3072, 4096];
++
++    for key_size in key_sizes {
++        for padding in paddings {
++            let alias = format!("ks_rsa_key_padding_{}{}", getuid(), key_size);
++            let result = create_rsa_key_and_operation(
++                &sec_level,
++                Domain::APP,
++                -1,
++                Some(alias.to_string()),
++                &key_generations::KeyParams {
++                    key_size,
++                    purpose: vec![KeyPurpose::ENCRYPT, KeyPurpose::DECRYPT],
++                    padding: Some(padding),
++                    digest: None,
++                    mgf_digest: None,
++                    block_mode: None,
++                    att_challenge: None,
++                    att_app_id: None,
++                },
++                KeyPurpose::DECRYPT,
++                ForcedOp(false),
++            );
++            assert!(result.is_ok());
++        } // End of paddings.
++    } // End of key-sizes.
++}
++
++/// Generate RSA keys without padding and digest modes. Try to create decrypt operation without
++/// digest and padding. Creation of an operation should fail with an error code
++/// `UNSUPPORTED_PADDING_MODE`.
++#[test]
++fn keystore2_rsa_generate_keys() {
++    let keystore2 = get_keystore_service();
++    let sec_level = keystore2.getSecurityLevel(SecurityLevel::TRUSTED_ENVIRONMENT).unwrap();
++
++    let key_sizes = [2048, 3072, 4096];
++
++    for key_size in key_sizes {
++        let alias = format!("ks_rsa_key_test_{}{}", getuid(), key_size);
++        let result = key_generations::map_ks_error(create_rsa_key_and_operation(
++            &sec_level,
++            Domain::APP,
++            -1,
++            Some(alias.to_string()),
++            &key_generations::KeyParams {
++                key_size,
++                purpose: vec![KeyPurpose::ENCRYPT, KeyPurpose::DECRYPT],
++                padding: None,
++                digest: None,
++                mgf_digest: None,
++                block_mode: None,
++                att_challenge: None,
++                att_app_id: None,
++            },
++            KeyPurpose::DECRYPT,
++            ForcedOp(false),
++        ));
++        assert!(result.is_err());
++        assert_eq!(Error::Km(ErrorCode::UNSUPPORTED_PADDING_MODE), result.unwrap_err());
++    }
++}
++
++/// Generate a RSA encryption key. Try to create a signing operation with it, an error
++/// `INCOMPATIBLE_PURPOSE` is expected as the generated key doesn't support sign operation.
++#[test]
++fn keystore2_rsa_encrypt_key_op_invalid_purpose() {
++    let keystore2 = get_keystore_service();
++    let sec_level = keystore2.getSecurityLevel(SecurityLevel::TRUSTED_ENVIRONMENT).unwrap();
++
++    let alias = "ks_rsa_test_key_1";
++    let result = key_generations::map_ks_error(create_rsa_key_and_operation(
++        &sec_level,
++        Domain::APP,
++        -1,
++        Some(alias.to_string()),
++        &key_generations::KeyParams {
++            key_size: 2048,
++            purpose: vec![KeyPurpose::ENCRYPT, KeyPurpose::DECRYPT],
++            padding: Some(PaddingMode::RSA_PKCS1_1_5_ENCRYPT),
++            digest: Some(Digest::SHA_2_256),
++            mgf_digest: None,
++            block_mode: None,
++            att_challenge: None,
++            att_app_id: None,
++        },
++        KeyPurpose::SIGN,
++        ForcedOp(false),
++    ));
++    assert!(result.is_err());
++    assert_eq!(Error::Km(ErrorCode::INCOMPATIBLE_PURPOSE), result.unwrap_err());
++}
++
++/// Generate a RSA signing key. Try to create a decrypt operation with it, an error
++/// `INCOMPATIBLE_PURPOSE` is expected as the generated key doesn't support decrypt operation.
++#[test]
++fn keystore2_rsa_sign_key_op_invalid_purpose() {
++    let keystore2 = get_keystore_service();
++    let sec_level = keystore2.getSecurityLevel(SecurityLevel::TRUSTED_ENVIRONMENT).unwrap();
++
++    let alias = "ks_rsa_test_key_2";
++    let result = key_generations::map_ks_error(create_rsa_key_and_operation(
++        &sec_level,
++        Domain::APP,
++        -1,
++        Some(alias.to_string()),
++        &key_generations::KeyParams {
++            key_size: 2048,
++            purpose: vec![KeyPurpose::SIGN, KeyPurpose::VERIFY],
++            padding: Some(PaddingMode::RSA_PKCS1_1_5_SIGN),
++            digest: Some(Digest::SHA_2_256),
++            mgf_digest: None,
++            block_mode: None,
++            att_challenge: None,
++            att_app_id: None,
++        },
++        KeyPurpose::DECRYPT,
++        ForcedOp(false),
++    ));
++    assert!(result.is_err());
++    assert_eq!(Error::Km(ErrorCode::INCOMPATIBLE_PURPOSE), result.unwrap_err());
++}
++
++/// Generate a RSA key with SIGN and AGREE_KEY purposes. Try to perform an operation using the
++/// generated key, an error `UNSUPPORTED_PURPOSE` is expected as RSA doesn't support AGREE_KEY.
++#[test]
++fn keystore2_rsa_key_unsupported_purpose() {
++    let keystore2 = get_keystore_service();
++    let sec_level = keystore2.getSecurityLevel(SecurityLevel::TRUSTED_ENVIRONMENT).unwrap();
++
++    let alias = "ks_rsa_key_test_3";
++    let result = key_generations::map_ks_error(create_rsa_key_and_operation(
++        &sec_level,
++        Domain::APP,
++        -1,
++        Some(alias.to_string()),
++        &key_generations::KeyParams {
++            key_size: 2048,
++            purpose: vec![KeyPurpose::AGREE_KEY],
++            padding: Some(PaddingMode::RSA_PKCS1_1_5_SIGN),
++            digest: Some(Digest::SHA_2_256),
++            mgf_digest: None,
++            block_mode: None,
++            att_challenge: None,
++            att_app_id: None,
++        },
++        KeyPurpose::AGREE_KEY,
++        ForcedOp(false),
++    ));
++    assert!(result.is_err());
++    assert_eq!(Error::Km(ErrorCode::UNSUPPORTED_PURPOSE), result.unwrap_err());
++}
++
++/// Generate a RSA encrypt key with padding mode supported for signing. Try to create an operation
++/// using generated key, an error `UNSUPPORTED_PADDING_MODE` is expected with unsupported padding
++/// mode.
++#[test]
++fn keystore2_rsa_encrypt_key_unsupported_padding() {
++    let keystore2 = get_keystore_service();
++    let sec_level = keystore2.getSecurityLevel(SecurityLevel::TRUSTED_ENVIRONMENT).unwrap();
++    let paddings = [PaddingMode::RSA_PKCS1_1_5_SIGN, PaddingMode::RSA_PSS];
++
++    for padding in paddings {
++        let alias = format!("ks_rsa_key_test_4_{}{}", getuid(), padding.0);
++        let result = key_generations::map_ks_error(create_rsa_key_and_operation(
++            &sec_level,
++            Domain::APP,
++            -1,
++            Some(alias.to_string()),
++            &key_generations::KeyParams {
++                key_size: 2048,
++                purpose: vec![KeyPurpose::ENCRYPT, KeyPurpose::DECRYPT],
++                padding: Some(padding),
++                digest: Some(Digest::SHA_2_256),
++                mgf_digest: None,
++                block_mode: None,
++                att_challenge: None,
++                att_app_id: None,
++            },
++            KeyPurpose::DECRYPT,
++            ForcedOp(false),
++        ));
++        assert!(result.is_err());
++        assert_eq!(Error::Km(ErrorCode::UNSUPPORTED_PADDING_MODE), result.unwrap_err());
++    }
++}
++
++/// Generate a RSA signing key with padding mode supported for encryption. Try to create an
++/// operation using generated key, an error `UNSUPPORTED_PADDING_MODE` is expected with
++/// unsupported padding mode.
++#[test]
++fn keystore2_rsa_signing_key_unsupported_padding() {
++    let keystore2 = get_keystore_service();
++    let sec_level = keystore2.getSecurityLevel(SecurityLevel::TRUSTED_ENVIRONMENT).unwrap();
++    let paddings = [PaddingMode::RSA_PKCS1_1_5_ENCRYPT, PaddingMode::RSA_OAEP];
++
++    for padding in paddings {
++        let alias = format!("ks_rsa_key_test_4_{}{}", getuid(), padding.0);
++        let result = key_generations::map_ks_error(create_rsa_key_and_operation(
++            &sec_level,
++            Domain::APP,
++            -1,
++            Some(alias.to_string()),
++            &key_generations::KeyParams {
++                key_size: 2048,
++                purpose: vec![KeyPurpose::SIGN, KeyPurpose::VERIFY],
++                padding: Some(padding),
++                digest: Some(Digest::SHA_2_256),
++                mgf_digest: None,
++                block_mode: None,
++                att_challenge: None,
++                att_app_id: None,
++            },
++            KeyPurpose::SIGN,
++            ForcedOp(false),
++        ));
++        assert!(result.is_err());
++        assert_eq!(Error::Km(ErrorCode::UNSUPPORTED_PADDING_MODE), result.unwrap_err());
++    }
++}
++
++/// Generate a RSA encryption key. Try to perform encrypt operation using the generated
++/// key, an error `UNSUPPORTED_PURPOSE` is expected as encrypt operation is not supported
++/// with RSA key.
++#[test]
++fn keystore2_rsa_key_unsupported_op() {
++    let keystore2 = get_keystore_service();
++    let sec_level = keystore2.getSecurityLevel(SecurityLevel::TRUSTED_ENVIRONMENT).unwrap();
++
++    let alias = "ks_rsa_key_test_5";
++    let result = key_generations::map_ks_error(create_rsa_key_and_operation(
++        &sec_level,
++        Domain::APP,
++        -1,
++        Some(alias.to_string()),
++        &key_generations::KeyParams {
++            key_size: 2048,
++            purpose: vec![KeyPurpose::ENCRYPT, KeyPurpose::DECRYPT],
++            padding: Some(PaddingMode::RSA_PKCS1_1_5_ENCRYPT),
++            digest: Some(Digest::SHA_2_256),
++            mgf_digest: None,
++            block_mode: None,
++            att_challenge: None,
++            att_app_id: None,
++        },
++        KeyPurpose::ENCRYPT,
++        ForcedOp(false),
++    ));
++
++    assert!(result.is_err());
++    assert_eq!(Error::Km(ErrorCode::UNSUPPORTED_PURPOSE), result.unwrap_err());
++}
++
++/// Generate a RSA key with encrypt, sign and verify purpose. Try to perform decrypt operation
++/// using the generated key, an error `INCOMPATIBLE_PURPOSE` is expected as the key is not
++/// generated with decrypt purpose.
++#[test]
++fn keystore2_rsa_key_missing_purpose() {
++    let keystore2 = get_keystore_service();
++    let sec_level = keystore2.getSecurityLevel(SecurityLevel::TRUSTED_ENVIRONMENT).unwrap();
++
++    let alias = "ks_rsa_key_test_6";
++    let result = key_generations::map_ks_error(create_rsa_key_and_operation(
++        &sec_level,
++        Domain::APP,
++        -1,
++        Some(alias.to_string()),
++        &key_generations::KeyParams {
++            key_size: 2048,
++            purpose: vec![KeyPurpose::ENCRYPT, KeyPurpose::SIGN, KeyPurpose::VERIFY],
++            padding: Some(PaddingMode::RSA_PKCS1_1_5_ENCRYPT),
++            digest: Some(Digest::SHA_2_256),
++            mgf_digest: None,
++            block_mode: None,
++            att_challenge: None,
++            att_app_id: None,
++        },
++        KeyPurpose::DECRYPT,
++        ForcedOp(false),
++    ));
++
++    assert!(result.is_err());
++    assert_eq!(Error::Km(ErrorCode::INCOMPATIBLE_PURPOSE), result.unwrap_err());
++}
++
++/// Generate RSA encryption keys with OAEP padding mode and without digest mode. Try to create an
++/// operation with generated key, unsupported digest error is expected.
++#[test]
++fn keystore2_rsa_gen_keys_with_oaep_paddings_without_digest() {
++    let keystore2 = get_keystore_service();
++    let sec_level = keystore2.getSecurityLevel(SecurityLevel::TRUSTED_ENVIRONMENT).unwrap();
++
++    let alias = "ks_rsa_key_padding_fail";
++    let result = key_generations::map_ks_error(create_rsa_key_and_operation(
++        &sec_level,
++        Domain::APP,
++        -1,
++        Some(alias.to_string()),
++        &key_generations::KeyParams {
++            key_size: 2048,
++            purpose: vec![KeyPurpose::ENCRYPT, KeyPurpose::DECRYPT],
++            padding: Some(PaddingMode::RSA_OAEP),
++            digest: None,
++            mgf_digest: None,
++            block_mode: None,
++            att_challenge: None,
++            att_app_id: None,
++        },
++        KeyPurpose::DECRYPT,
++        ForcedOp(false),
++    ));
++
++    assert!(result.is_err());
++    assert_eq!(Error::Km(ErrorCode::UNSUPPORTED_DIGEST), result.unwrap_err());
++}
++
++/// Generate RSA keys with unsupported key size, an error `UNSUPPORTED_KEY_SIZE` is expected.
++#[test]
++fn keystore2_rsa_gen_keys_unsupported_size() {
++    let keystore2 = get_keystore_service();
++    let sec_level = keystore2.getSecurityLevel(SecurityLevel::TRUSTED_ENVIRONMENT).unwrap();
++
++    let alias = "ks_rsa_key_padding_fail";
++    let result = key_generations::map_ks_error(key_generations::generate_rsa_key(
++        &sec_level,
++        Domain::APP,
++        -1,
++        Some(alias.to_string()),
++        &key_generations::KeyParams {
++            key_size: 5120,
++            purpose: vec![KeyPurpose::ENCRYPT, KeyPurpose::SIGN, KeyPurpose::VERIFY],
++            padding: Some(PaddingMode::RSA_PKCS1_1_5_ENCRYPT),
++            digest: Some(Digest::SHA_2_256),
++            mgf_digest: None,
++            block_mode: None,
++            att_challenge: None,
++            att_app_id: None,
++        },
++        None,
++    ));
++
++    assert!(result.is_err());
++    assert_eq!(Error::Km(ErrorCode::UNSUPPORTED_KEY_SIZE), result.unwrap_err());
++}
+-- 
+2.38.1
+

@@ -1,10 +1,11 @@
-From c5018a6aadefbbc177a1ac681d15d67314e5f1ff Mon Sep 17 00:00:00 2001
-From: Jens Reidel <adrian@travitia.xyz>
-Date: Thu, 10 Nov 2022 23:38:38 +0200
-Subject: [PATCH] uwb: Update source for Rust 1.65.0
+From dbbd33cfceb844e5ce87d4f2f7a7bb4bdf0d4a35 Mon Sep 17 00:00:00 2001
+From: Chris Wailes <chriswailes@google.com>
+Date: Wed, 16 Nov 2022 15:26:07 -0800
+Subject: [PATCH] Fix warnings from rustc 1.65.0
 
-Change-Id: I99c576dca6f63b4d9c8710f9a74bc67802c5722e
-Signed-off-by: Jens Reidel <adrian@travitia.xyz>
+Bug: 250026064
+Test: m rust
+Change-Id: I81e030547c907b12235a4858e0edd3cb93a5f8a7
 ---
  src/rust/event_manager/mod.rs | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
