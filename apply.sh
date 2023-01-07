@@ -10,7 +10,7 @@ echo "[i] Fetching latest Adrian Clang build for the ROM build..."
 rm -rf prebuilts/clang/host/linux-x86/adrian-clang
 mkdir -p prebuilts/clang/host/linux-x86/adrian-clang
 cd prebuilts/clang/host/linux-x86/adrian-clang
-curl https://ftp.travitia.xyz/clang/clang-latest.tar.xz | tar -xJ
+curl https://ftp.travitia.xyz/clang/clang-r480284.tar.xz | tar -xJ
 cd $BASE_BUILD_DIR
 
 echo "[i] Fetching Rust 1.66.0 build for the ROM build..."

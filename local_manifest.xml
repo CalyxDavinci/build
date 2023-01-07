@@ -4,7 +4,6 @@
   <remote name="calyxd-github" fetch="https://github.com/" />
   <remote name="calyxd-gitlab" fetch="https://gitlab.com/" />
   <remote name="aosp" fetch="https://android.googlesource.com/" review="https://android-review.googlesource.com/" />
-  <remote fetch="https://git.codelinaro.org/clo/la" name="clo" review="codelinaro.org"/>
 
   <!-- Remove existing repositories -->
   <remove-project name="platform/external/zlib" />
@@ -28,12 +27,13 @@
   <remove-project name="platform/external/rust/crates/structopt-derive" />
   <remove-project name="platform/external/rust/cxx" />
   <remove-project name="platform/external/rust/crates/once_cell" />
-  <remove-project name="platform/external/boringssl" />
 
   <!-- Rust is outdated, add much more recent one -->
   <remove-project name="platform/prebuilts/rust" />
   <!-- Older bingen is incompatible with newer clang -->
   <remove-project name="platform/prebuilts/clang-tools" />
+
+  <project path="device/qcom/sepolicy_vndr" name="LineageOS/android_device_qcom_sepolicy_vndr" remote="calyxd-github" revision="lineage-20.0" />
 
   <!-- davinci stuff -->
   <project path="device/xiaomi/davinci" name="CalyxDavinci/device_xiaomi_davinci" remote="calyxd-github" revision="13" />
@@ -51,12 +51,10 @@
   <project path="external/f2fs-tools" name="CalyxDavinci/android_external_f2fs-tools" remote="calyxd-github" revision="13" />
   <project path="external/erofs-utils" name="CalyxDavinci/android_external_erofs-utils" remote="calyxd-github" revision="13" />
 
-  <project path="device/qcom/sepolicy_vndr" name="CalyxOS/device_qcom_sepolicy_vndr" remote="calyxd-gitlab" revision="android12L" />
-
   <!-- More recent Rust -->
   <project path="prebuilts/rust" name="platform/prebuilts/rust" remote="aosp" clone-depth="1" revision="refs/tags/rustc-1.64.0" />
   <!-- Newer Clang requires more recent clang-tools for bindgen -->
-  <project path="prebuilts/clang-tools" name="platform/prebuilts/clang-tools" remote="aosp" clone-depth="1" revision="master" />
+  <project path="prebuilts/clang-tools" name="Kenvyra/android_prebuilts_clang-tools" remote="calyxd-gitlab" clone-depth="1" revision="kenvyra-13.0" />
   <project path="external/rust/crate/bindgen" name="CalyxDavinci/rust-bindgen" remote="calyxd-github" revision="master" />
   <!-- Newer bindgen requires newer clap -->
   <project path="external/rust/crates/clap" name="platform/external/rust/crates/clap" remote="aosp" clone-depth="1" revision="master" />
@@ -78,8 +76,4 @@
   <project path="external/rust/crates/foreign-types-macros" name="platform/external/rust/crates/foreign-types-macros" remote="aosp" revision="master" />
   <project path="external/rust/crates/foreign-types-shared" name="platform/external/rust/crates/foreign-types-shared" remote="aosp" revision="master" />
   <project path="external/rust/crates/once_cell" name="platform/external/rust/crates/once_cell" remote="aosp" revision="master" />
-  <project path="external/boringssl" name="platform/external/boringssl" remote="aosp" revision="b9e46fc97b5fcb64f753fdba8e87cc50a819bae0" />
-
-  <!-- Better default Camera app -->
-  <project path="packages/apps/Aperture" name="LineageOS/android_packages_apps_Aperture" remote="calyxd-github" revision="lineage-20.0" />
 </manifest>

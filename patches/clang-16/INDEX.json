@@ -39,35 +39,32 @@
     "external/libhevc": [
         "0018-encoder-Fix-enum-conversion-warning.patch"
     ],
-    "prebuilts/clang-tools": [
-        "0019-clang-tools-Update-bindgen-to-0.62.patch"
-    ],
     "system/security": [
-        "0020-keystore2-Fix-compatibility-with-newer-bindgen.patch"
+        "0019-keystore2-Fix-compatibility-with-newer-bindgen.patch"
     ],
     "system/librustutils": [
-        "0021-librustutils-Fix-compatibility-with-newer-bindgen.patch"
+        "0020-librustutils-Fix-compatibility-with-newer-bindgen.patch"
     ],
     "packages/modules/Bluetooth": [
-        "0022-floss-Remove-noop-std-move-task_.patch"
+        "0021-floss-Remove-noop-std-move-task_.patch"
     ],
     "packages/modules/Connectivity": [
-        "0023-Fix-linker-error-with-upstream-llvm.patch"
+        "0022-Fix-linker-error-with-upstream-llvm.patch"
     ],
     "build/soong": [
-        "0024-Reland-Update-to-clang-r450784e.patch",
-        "0025-Add-extra-cflags-for-LLVM_NEXT.patch",
-        "0026-Update-clang-version-to-clang-r458507.patch",
-        "0027-Globally-force-Wdeprecated-declarations-to-be-a-warn.patch",
-        "0028-Prepare-to-build-clang-r468909.patch",
-        "0029-Update-clang-version-to-clang-r468909.patch",
-        "0030-Update-clang-version-to-clang-r468909b.patch",
-        "0031-Enable-ICF-safe-for-host-binaries-as-well.patch",
-        "0032-Prepare-to-build-clang-r475365.patch",
-        "0033-Remove-deprecated-experimental-new-pass-manager-flag.patch",
-        "0034-build-Use-adrian-clang-16-instead-of-AOSP-clang-15.patch"
+        "0023-Reland-Update-to-clang-r450784e.patch",
+        "0024-Add-extra-cflags-for-LLVM_NEXT.patch",
+        "0025-Update-clang-version-to-clang-r458507.patch",
+        "0026-Globally-force-Wdeprecated-declarations-to-be-a-warn.patch",
+        "0027-Prepare-to-build-clang-r468909.patch",
+        "0028-Update-clang-version-to-clang-r468909.patch",
+        "0029-Update-clang-version-to-clang-r468909b.patch",
+        "0030-Enable-ICF-safe-for-host-binaries-as-well.patch",
+        "0031-Prepare-to-build-clang-r475365.patch",
+        "0032-Remove-deprecated-experimental-new-pass-manager-flag.patch",
+        "0033-build-Use-adrian-clang-16-instead-of-AOSP-clang-15.patch"
     ],
     "vendor/calyx": [
-        "0035-config-Use-adrian-clang-for-kernel-build-by-default.patch"
+        "0034-config-Use-adrian-clang-for-kernel-build-by-default.patch"
     ]
 }
